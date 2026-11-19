@@ -87,9 +87,14 @@
   <script>
     // Format tanggal dari YYYY-MM-DD jadi DD MMM YYYY
     function formatTgl(str) {
-      if(!str) return '-';
-      const d = new Date(str);
-      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      if(!str || str === '-') return '-';
+      try {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return str; // Kembalikan string asli jika gagal parse
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch (e) {
+        return str;
+      }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
