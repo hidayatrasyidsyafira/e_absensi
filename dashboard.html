@@ -6,89 +6,185 @@
   <title>Dashboard — Absensi QR</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen pb-10">
 
   <!-- Navbar -->
-  <nav class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
       </div>
-      <span class="font-semibold text-gray-900">Absensi QR</span>
+      <span class="font-semibold text-gray-900 hidden sm:block">Absensi QR</span>
     </div>
-    <button onclick="Auth.logout()"
-      class="text-sm text-gray-600 hover:text-red-600 font-medium">
-      Keluar
-    </button>
+    <button onclick="Auth.logout()" class="text-sm text-gray-600 hover:text-red-600 font-medium">Keluar</button>
   </nav>
 
   <!-- Content -->
-  <main class="max-w-4xl mx-auto p-6">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-      <h1 class="text-2xl font-semibold text-gray-900 mb-2" id="greeting">Memuat...</h1>
-      <p class="text-gray-500 mb-6" id="roleInfo">-</p>
+  <main class="max-w-3xl mx-auto p-4 mt-4">
+    
+    <!-- Header User -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900" id="greeting">Memuat...</h1>
+      <p class="text-gray-500 text-sm" id="roleInfo">-</p>
+    </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8 text-left">
-        <div class="bg-gray-50 rounded-xl p-4">
-          <p class="text-xs text-gray-500 mb-1">User ID</p>
-          <p class="font-mono text-sm text-gray-900" id="userId">-</p>
+    <!-- MENU KHUSUS GURU/ADMIN -->
+    <div id="menuGuru" class="hidden mb-6">
+      <a href="sesi.html" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        Mulai Sesi Mapel (Guru)
+      </a>
+    </div>
+
+    <!-- TAMPILAN ADMIN -->
+    <div id="panelAdmin" class="hidden">
+      <h2 class="font-bold text-gray-800 mb-3">Statistik Hari Ini</h2>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500 font-medium mb-1">Hadir Gerbang</p>
+          <p class="text-2xl font-bold text-green-600" id="statGerbang">0</p>
         </div>
-        <div class="bg-gray-50 rounded-xl p-4">
-          <p class="text-xs text-gray-500 mb-1">Role</p>
-          <p class="font-medium text-sm text-gray-900 capitalize" id="userRole">-</p>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500 font-medium mb-1">Terlambat</p>
+          <p class="text-2xl font-bold text-yellow-500" id="statTerlambat">0</p>
         </div>
-        <div class="bg-gray-50 rounded-xl p-4">
-          <p class="text-xs text-gray-500 mb-1">Status</p>
-          <p class="font-medium text-sm text-green-600">Aktif</p>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500 font-medium mb-1">Scan Mapel</p>
+          <p class="text-2xl font-bold text-blue-600" id="statMapel">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500 font-medium mb-1">Sesi Aktif</p>
+          <p class="text-2xl font-bold text-purple-600" id="statSesi">0</p>
         </div>
       </div>
+      <p class="text-xs text-center text-gray-400">Total Siswa Aktif: <span id="statTotalSiswa" class="font-bold">-</span></p>
+    </div>
 
-      <!-- Tombol Khusus Guru -->
-      <div id="menuGuru" class="hidden mt-8">
-        <a href="sesi.html" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-          Mulai Sesi Mapel
-        </a>
+    <!-- TAMPILAN SISWA -->
+    <div id="panelSiswa" class="hidden">
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4 bg-gray-200 p-1 rounded-xl">
+        <button onclick="switchTab('gerbang')" id="tabBtnGerbang" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all">Gerbang</button>
+        <button onclick="switchTab('mapel')" id="tabBtnMapel" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Mata Pelajaran</button>
       </div>
 
-      <div class="mt-8 pt-6 border-t border-gray-100">
-        <p class="text-sm text-gray-400">
-          🚧 Fitur absen, rekap, dan dashboard admin akan ditambahkan di fase berikutnya.
-        </p>
+      <!-- List Gerbang -->
+      <div id="listGerbang" class="space-y-2">
+        <!-- Render JS -->
+      </div>
+
+      <!-- List Mapel -->
+      <div id="listMapel" class="space-y-2 hidden">
+        <!-- Render JS -->
       </div>
     </div>
+
   </main>
 
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="auth.js"></script>
   <script>
-    // Proteksi halaman
-    (async () => {
-      if (!Auth.isLoggedIn()) {
-        window.location.href = 'index.html';
-        return;
+    // Format tanggal dari YYYY-MM-DD jadi DD MMM YYYY
+    function formatTgl(str) {
+      if(!str) return '-';
+      const d = new Date(str);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
+      
+      const user = Auth.getUser();
+      if (!user) return window.location.href = 'index.html';
+
+      document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
+      document.getElementById('roleInfo').textContent = `Login sebagai ${user.role.toUpperCase()}`;
+
+      // Tampilkan menu guru
+      if (user.role === 'guru' || user.role === 'admin') {
+        document.getElementById('menuGuru').classList.remove('hidden');
       }
-      const valid = await Auth.validateToken();
-      if (!valid) {
-        window.location.href = 'index.html';
+
+      // Load Data Rekap
+      const res = await API.post('getRekap', { token: Auth.getToken() });
+      
+      if (!res.success) {
+        document.getElementById('greeting').textContent = 'Gagal memuat data.';
         return;
       }
 
-      const user = Auth.getUser();
-      if (user) {
-        document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
-        document.getElementById('roleInfo').textContent = `Anda masuk sebagai ${user.role}`;
-        document.getElementById('userId').textContent = user.id;
-        document.getElementById('userRole').textContent = user.role;
+      if (user.role === 'admin') {
+        document.getElementById('panelAdmin').classList.remove('hidden');
+        document.getElementById('statGerbang').textContent = res.data.hadirGerbang;
+        document.getElementById('statTerlambat').textContent = res.data.terlambatGerbang;
+        document.getElementById('statMapel').textContent = res.data.totalScanMapel;
+        document.getElementById('statSesi').textContent = res.data.sesiAktif;
+        document.getElementById('statTotalSiswa').textContent = res.data.totalSiswa;
+      } 
+      
+      else if (user.role === 'siswa') {
+        document.getElementById('panelSiswa').classList.remove('hidden');
+        
+        // Render List Gerbang
+        const listG = document.getElementById('listGerbang');
+        if (res.data.gerbang.length === 0) {
+          listG.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat absen gerbang.</div>';
+        } else {
+          listG.innerHTML = res.data.gerbang.map(g => `
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div>
+                <div class="font-bold text-gray-800 text-sm capitalize">Absen ${g.tipe}</div>
+                <div class="text-xs text-gray-500">${formatTgl(g.tanggal)}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-sm ${g.status === 'terlambat' ? 'text-yellow-600' : 'text-green-600'}">${String(g.jam).substring(0,5)}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider ${g.status === 'terlambat' ? 'text-yellow-500' : 'text-green-500'}">${g.status}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Render List Mapel
+        const listM = document.getElementById('listMapel');
+        if (res.data.mapel.length === 0) {
+          listM.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat absen mapel.</div>';
+        } else {
+          listM.innerHTML = res.data.mapel.map(m => `
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div>
+                <div class="font-bold text-gray-800 text-sm">${m.mapel}</div>
+                <div class="text-xs text-gray-500">Jam ke-${m.jam_ke} • ${m.kelas}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-gray-500">${formatTgl(m.tanggal)}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-green-500">${m.status}</div>
+              </div>
+            </div>
+          `).join('');
+        }
       }
-      if (user.role === 'guru' || user.role === 'admin') {
-          document.getElementById('menuGuru').classList.remove('hidden');
+    });
+
+    // Logic Tab Siswa
+    function switchTab(tab) {
+      const btnG = document.getElementById('tabBtnGerbang');
+      const btnM = document.getElementById('tabBtnMapel');
+      const listG = document.getElementById('listGerbang');
+      const listM = document.getElementById('listMapel');
+
+      if (tab === 'gerbang') {
+        btnG.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
+        btnM.className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
+        listG.classList.remove('hidden');
+        listM.classList.add('hidden');
+      } else {
+        btnM.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
+        btnG.className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all';
+        listM.classList.remove('hidden');
+        listG.classList.add('hidden');
       }
-    })();
+    }
   </script>
 </body>
 </html>
