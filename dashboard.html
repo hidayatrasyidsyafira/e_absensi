@@ -111,6 +111,7 @@
       
       if (!res.success) {
         document.getElementById('greeting').textContent = 'Gagal memuat data.';
+        document.getElementById('roleInfo').innerHTML = `<span class="text-red-500">${res.message}</span>`;
         return;
       }
 
