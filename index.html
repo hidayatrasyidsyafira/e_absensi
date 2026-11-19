@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-sm">
+    <!-- Logo / Brand -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-semibold text-gray-900">Absensi QR</h1>
+      <p class="text-sm text-gray-500 mt-1">Masuk untuk melanjutkan</p>
+    </div>
+
+    <!-- Card Login -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            NISN atau Email
+          </label>
+          <input type="text" id="nisn" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            placeholder="Masukkan NISN atau email">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Password
+          </label>
+          <div class="relative">
+            <input type="password" id="password" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none pr-10"
+              placeholder="Masukkan password">
+            <button type="button" id="togglePwd"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="errorMsg" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg"></div>
+
+        <button type="submit" id="submitBtn"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          Masuk
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-gray-100 text-center">
+        <p class="text-xs text-gray-500">
+          Lupa password? Hubungi admin sekolah.
+        </p>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-gray-400 mt-6">
+      &copy; 2025 Absensi QR &middot; v<span id="appVersion">-</span>
+    </p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Set versi
+    document.getElementById('appVersion').textContent = APP_CONFIG.VERSION;
+
+    // Redirect kalau sudah login
+    (async () => {
+      if (Auth.isLoggedIn()) {
+        const valid = await Auth.validateToken();
+        if (valid) window.location.href = 'dashboard.html';
+        else Auth.clearSession();
+      }
+    })();
+
+    // Toggle password visibility
+    const pwdInput = document.getElementById('password');
+    document.getElementById('togglePwd').addEventListener('click', () => {
+      pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
+    });
+
+    // Handle login
+    const form = document.getElementById('loginForm');
+    const btn = document.getElementById('submitBtn');
+    const errBox = document.getElementById('errorMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Memproses...';
+
+      const nisn = document.getElementById('nisn').value.trim();
+      const password = pwdInput.value;
+
+      const res = await Auth.login(nisn, password);
+
+      if (res.success) {
+        // Redirect berdasarkan role
+        const role = res.data.user.role;
+        if (role === 'admin') window.location.href = 'dashboard.html';
+        else if (role === 'guru') window.location.href = 'dashboard.html';
+        else window.location.href = 'dashboard.html';
+      } else {
+        errBox.textContent = res.message || 'Login gagal';
+        errBox.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Masuk';
+      }
+    });
+  </script>
+</body>
+</html>
