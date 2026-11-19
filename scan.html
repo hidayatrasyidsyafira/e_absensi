@@ -9,6 +9,7 @@
   <style>
     #reader { border: none !important; }
     #reader video { border-radius: 1rem; object-fit: cover; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
@@ -22,10 +23,9 @@
 
     <!-- Area Kamera & Hasil Scan -->
     <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl aspect-square flex items-center justify-center border-4 border-gray-700" id="cameraContainer">
-      <!-- Div untuk library scanner -->
       <div id="reader" class="w-full"></div>
       
-      <!-- Overlay Loading / Hasil (disembunyikan awalnya) -->
+      <!-- Overlay Loading / Hasil -->
       <div id="resultOverlay" class="absolute inset-0 bg-black/90 z-10 hidden flex-col items-center justify-center text-center p-6 transition-all duration-300">
         <div id="resultIcon" class="text-6xl mb-4">⏳</div>
         <h2 id="resultName" class="text-3xl font-bold mb-2">Memproses...</h2>
@@ -34,12 +34,17 @@
       </div>
     </div>
 
-    <!-- Kontrol Tipe Absen -->
-    <div class="mt-6 bg-gray-800 p-2 rounded-xl flex gap-2">
-      <button onclick="setTipe('masuk')" id="btnMasuk" class="flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all">
+    <!-- Indikator Waktu -->
+    <div id="indikatorWaktu" class="mt-6 text-center bg-gray-800 py-3 rounded-xl border border-gray-700">
+      <p class="text-sm text-gray-400">Memuat konfigurasi waktu...</p>
+    </div>
+
+    <!-- Kontrol Tipe Absen (Akan otomatis terkunci) -->
+    <div class="mt-4 bg-gray-800 p-2 rounded-xl flex gap-2">
+      <button onclick="setTipe('masuk')" id="btnMasuk" class="flex-1 py-3 rounded-lg font-semibold transition-all">
         Absen Masuk
       </button>
-      <button onclick="setTipe('pulang')" id="btnPulang" class="flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all">
+      <button onclick="setTipe('pulang')" id="btnPulang" class="flex-1 py-3 rounded-lg font-semibold transition-all">
         Absen Pulang
       </button>
     </div>
@@ -49,40 +54,72 @@
     </div>
   </div>
 
-  <!-- Sertakan file JS utama -->
   <script src="config.js"></script>
   <script src="api.js"></script>
   
   <script>
-    // Pastikan hanya user login yang bisa akses halaman ini (misal: admin/guru jaga gerbang)
-    // Untuk simplifikasi, kita izinkan akses bebas dulu.
-
     let currentTipe = 'masuk';
     let isScanning = false;
     let html5QrCode;
 
-    // Setup Tombol Tipe Absen
+    // Load Setting Waktu & Otomatis Pilih Mode
+    async function initWaktu() {
+      try {
+        const res = await API.get('getSettings');
+        if (res.success) {
+          const s = res.data;
+          const jamPulang = s['jam_pulang'] || '15:00';
+          const [hP, mP] = jamPulang.split(':').map(Number);
+          const batasTransisi = (hP * 60) + mP - 60; // 1 jam sebelum pulang
+
+          const now = new Date();
+          const currentMenit = now.getHours() * 60 + now.getMinutes();
+          
+          const infoEl = document.getElementById('indikatorWaktu');
+          const btnMasuk = document.getElementById('btnMasuk');
+          const btnPulang = document.getElementById('btnPulang');
+
+          if (currentMenit >= batasTransisi) {
+            // Waktunya Pulang
+            setTipe('pulang');
+            btnMasuk.disabled = true;
+            btnMasuk.innerHTML = 'Terkunci (Waktu Pulang)';
+            btnPulang.innerHTML = 'Absen Pulang (Aktif)';
+            infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</b> | Mode: <b class="text-blue-400">PULANG</b></p>`;
+          } else {
+            // Waktunya Masuk
+            setTipe('masuk');
+            btnPulang.disabled = true;
+            btnPulang.innerHTML = 'Terkunci (Waktu Masuk)';
+            btnMasuk.innerHTML = 'Absen Masuk (Aktif)';
+            infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</b> | Mode: <b class="text-green-400">MASUK</b></p>`;
+          }
+        }
+      } catch(e) {
+        console.error("Gagal memuat setting waktu", e);
+      }
+    }
+
     function setTipe(tipe) {
       currentTipe = tipe;
       const btnMasuk = document.getElementById('btnMasuk');
       const btnPulang = document.getElementById('btnPulang');
 
       if (tipe === 'masuk') {
-        btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all';
-        btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
+        btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all shadow-md';
+        if (!btnPulang.disabled) btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
       } else {
-        btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all';
-        btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
+        btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all shadow-md';
+        if (!btnMasuk.disabled) btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
       }
     }
 
-    // Start Scanner
     function startScanner() {
       html5QrCode = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
       html5QrCode.start(
-        { facingMode: "environment" }, // Gunakan kamera belakang
+        { facingMode: "environment" },
         config,
         onScanSuccess
       ).catch(err => {
@@ -90,29 +127,23 @@
       });
     }
 
-    // Callback saat QR terbaca
-    async function onScanSuccess(decodedText, decodedResult) {
-      if (isScanning) return; // Cegah double scan
+    async function onScanSuccess(decodedText) {
+      if (isScanning) return;
       isScanning = true;
 
-      // Getarkan HP (jika didukung)
       if (navigator.vibrate) navigator.vibrate(200);
 
-      // Tampilkan Overlay Loading
       const overlay = document.getElementById('resultOverlay');
       overlay.classList.remove('hidden');
       overlay.classList.add('flex');
       document.getElementById('resultIcon').textContent = '⏳';
       document.getElementById('resultName').textContent = 'Memproses...';
-      document.getElementById('resultKelas').textContent = decodedText; // Tampilkan NISN yang terbaca
+      document.getElementById('resultKelas').textContent = decodedText;
       document.getElementById('resultStatus').className = 'hidden';
 
-      // Kirim ke API
       const res = await API.post('absenGerbang', { nisn: decodedText, tipe: currentTipe });
       
-      // Tampilkan Hasil
       if (res.success) {
-        // Sukses
         document.getElementById('resultIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
         document.getElementById('resultName').textContent = res.data.nama;
         document.getElementById('resultKelas').textContent = res.data.kelas;
@@ -127,7 +158,6 @@
           statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/50';
         }
       } else {
-        // Gagal (misal: sudah absen / nisn tidak ada)
         document.getElementById('resultIcon').textContent = '❌';
         document.getElementById('resultName').textContent = 'Gagal';
         
@@ -137,7 +167,6 @@
         statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-red-500/20 text-red-400 border border-red-500/50';
       }
 
-      // Sembunyikan overlay setelah 3 detik, lalu izinkan scan lagi
       setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.classList.remove('flex');
@@ -145,8 +174,8 @@
       }, 3000);
     }
 
-    // Jalankan saat halaman dimuat
     window.addEventListener('DOMContentLoaded', () => {
+      initWaktu(); // Cek jam dulu sebelum mulai
       startScanner();
     });
   </script>
