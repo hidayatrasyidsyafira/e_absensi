@@ -269,16 +269,26 @@
     // ==========================================
     // FITUR PERSETUJUAN IZIN (GURU/ADMIN)
     // ==========================================
-    async function loadPersetujuanIzin() {
+        async function loadPersetujuanIzin() {
       const res = await API.post('getIzin', { token: Auth.getToken() });
       const box = document.getElementById('listPersetujuanIzin');
+      const panel = document.getElementById('panelPersetujuanIzin');
       
-      if (!res.success || res.data.list.length === 0) {
-        document.getElementById('panelPersetujuanIzin').classList.add('hidden');
-        return; // Sembunyikan panel jika tidak ada izin pending
+      // Tampilkan panelnya terlebih dahulu
+      panel.classList.remove('hidden');
+
+      if (!res.success) {
+        box.innerHTML = `<div class="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl border border-red-200">Gagal memuat: ${res.message}</div>`;
+        return;
       }
 
-      document.getElementById('panelPersetujuanIzin').classList.remove('hidden');
+      // Jika tidak ada data
+      if (res.data.list.length === 0) {
+        box.innerHTML = '<div class="text-center py-4 text-gray-500 text-sm bg-white rounded-xl border border-gray-100">Tidak ada pengajuan izin yang menunggu persetujuan.</div>';
+        return;
+      }
+
+      // Render List
       box.innerHTML = res.data.list.map(i => `
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div class="flex justify-between items-start mb-2">
