@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Gerbang — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    #reader { border: none !important; }
+    #reader video { border-radius: 1rem; object-fit: cover; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div class="w-full max-w-md">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <h1 class="text-xl font-bold text-white">Scanner Gerbang</h1>
+      <p class="text-sm text-gray-400">Tempelkan Kartu Pelajar ke Kamera</p>
+    </div>
+
+    <!-- Area Kamera & Hasil Scan -->
+    <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl aspect-square flex items-center justify-center border-4 border-gray-700" id="cameraContainer">
+      <!-- Div untuk library scanner -->
+      <div id="reader" class="w-full"></div>
+      
+      <!-- Overlay Loading / Hasil (disembunyikan awalnya) -->
+      <div id="resultOverlay" class="absolute inset-0 bg-black/90 z-10 hidden flex-col items-center justify-center text-center p-6 transition-all duration-300">
+        <div id="resultIcon" class="text-6xl mb-4">⏳</div>
+        <h2 id="resultName" class="text-3xl font-bold mb-2">Memproses...</h2>
+        <p id="resultKelas" class="text-lg text-gray-300 mb-6"></p>
+        <div id="resultStatus" class="px-4 py-2 rounded-full font-bold text-sm"></div>
+      </div>
+    </div>
+
+    <!-- Kontrol Tipe Absen -->
+    <div class="mt-6 bg-gray-800 p-2 rounded-xl flex gap-2">
+      <button onclick="setTipe('masuk')" id="btnMasuk" class="flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all">
+        Absen Masuk
+      </button>
+      <button onclick="setTipe('pulang')" id="btnPulang" class="flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all">
+        Absen Pulang
+      </button>
+    </div>
+
+    <div class="mt-4 text-center">
+      <a href="dashboard.html" class="text-sm text-gray-500 hover:text-white underline">Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Sertakan file JS utama -->
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  
+  <script>
+    // Pastikan hanya user login yang bisa akses halaman ini (misal: admin/guru jaga gerbang)
+    // Untuk simplifikasi, kita izinkan akses bebas dulu.
+
+    let currentTipe = 'masuk';
+    let isScanning = false;
+    let html5QrCode;
+
+    // Setup Tombol Tipe Absen
+    function setTipe(tipe) {
+      currentTipe = tipe;
+      const btnMasuk = document.getElementById('btnMasuk');
+      const btnPulang = document.getElementById('btnPulang');
+
+      if (tipe === 'masuk') {
+        btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all';
+        btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
+      } else {
+        btnPulang.className = 'flex-1 py-3 rounded-lg font-semibold bg-blue-600 text-white transition-all';
+        btnMasuk.className = 'flex-1 py-3 rounded-lg font-semibold text-gray-400 hover:bg-gray-700 transition-all';
+      }
+    }
+
+    // Start Scanner
+    function startScanner() {
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" }, // Gunakan kamera belakang
+        config,
+        onScanSuccess
+      ).catch(err => {
+        alert("Gagal mengakses kamera: " + err);
+      });
+    }
+
+    // Callback saat QR terbaca
+    async function onScanSuccess(decodedText, decodedResult) {
+      if (isScanning) return; // Cegah double scan
+      isScanning = true;
+
+      // Getarkan HP (jika didukung)
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      // Tampilkan Overlay Loading
+      const overlay = document.getElementById('resultOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      document.getElementById('resultIcon').textContent = '⏳';
+      document.getElementById('resultName').textContent = 'Memproses...';
+      document.getElementById('resultKelas').textContent = decodedText; // Tampilkan NISN yang terbaca
+      document.getElementById('resultStatus').className = 'hidden';
+
+      // Kirim ke API
+      const res = await API.post('absenGerbang', { nisn: decodedText, tipe: currentTipe });
+      
+      // Tampilkan Hasil
+      if (res.success) {
+        // Sukses
+        document.getElementById('resultIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
+        document.getElementById('resultName').textContent = res.data.nama;
+        document.getElementById('resultKelas').textContent = res.data.kelas;
+        
+        const statEl = document.getElementById('resultStatus');
+        statEl.classList.remove('hidden');
+        if (res.data.status === 'tepat') {
+          statEl.textContent = `Masuk Tepat Waktu - ${res.data.jam}`;
+          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-green-500/20 text-green-400 border border-green-500/50';
+        } else {
+          statEl.textContent = `Terlambat - ${res.data.jam}`;
+          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/50';
+        }
+      } else {
+        // Gagal (misal: sudah absen / nisn tidak ada)
+        document.getElementById('resultIcon').textContent = '❌';
+        document.getElementById('resultName').textContent = 'Gagal';
+        
+        const statEl = document.getElementById('resultStatus');
+        statEl.classList.remove('hidden');
+        statEl.textContent = res.message;
+        statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-red-500/20 text-red-400 border border-red-500/50';
+      }
+
+      // Sembunyikan overlay setelah 3 detik, lalu izinkan scan lagi
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        isScanning = false;
+      }, 3000);
+    }
+
+    // Jalankan saat halaman dimuat
+    window.addEventListener('DOMContentLoaded', () => {
+      startScanner();
+    });
+  </script>
+</body>
+</html>
