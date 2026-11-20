@@ -61,57 +61,71 @@
     let currentTipe = 'masuk';
     let isScanning = false;
     let html5QrCode;
+    let batasTransisiMenit = null; // Menyimpan batas waktu pergantian mode
 
-    // Load Setting Waktu & Otomatis Pilih Mode
-        async function initWaktu() {
+    // Load Setting Waktu
+    async function initWaktu() {
       try {
         const res = await API.get('getSettings');
         if (res.success) {
           const s = res.data;
           let jamPulang = s['jam_pulang'] || '15:00';
           
-          // --- PENGAMAN FORMAT WAKTU ---
-          // Jika backend masih mengirim format Date (ISO) atau format aneh
+          // Pengaman format
           if (String(jamPulang).includes('T')) {
              const d = new Date(jamPulang);
              jamPulang = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
           } else if (typeof jamPulang === 'string') {
-             // Jika tertulis 7:00, jadikan 07:00
              const parts = jamPulang.split(':');
              if(parts.length >= 2) jamPulang = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
           }
-          // ------------------------------
 
           const [hP, mP] = jamPulang.split(':').map(Number);
-          const batasTransisi = (hP * 60) + mP - 60; // 1 jam sebelum pulang
+          batasTransisiMenit = (hP * 60) + mP - 60; // 1 jam sebelum pulang
 
-          const now = new Date();
-          const currentMenit = now.getHours() * 60 + now.getMinutes();
-          
-          const infoEl = document.getElementById('indikatorWaktu');
-          const btnMasuk = document.getElementById('btnMasuk');
-          const btnPulang = document.getElementById('btnPulang');
-
-          console.log("Cek Waktu -> Sekarang:", currentMenit, "Menit | Batas Transisi:", batasTransisi, "Menit");
-
-          if (currentMenit >= batasTransisi) {
-            // Waktunya Pulang
-            setTipe('pulang');
-            btnMasuk.disabled = true;
-            btnMasuk.innerHTML = 'Terkunci (Waktu Pulang)';
-            btnPulang.innerHTML = 'Absen Pulang (Aktif)';
-            infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</b> | Mode: <b class="text-blue-400">PULANG</b></p>`;
-          } else {
-            // Waktunya Masuk
-            setTipe('masuk');
-            btnPulang.disabled = true;
-            btnPulang.innerHTML = 'Terkunci (Waktu Masuk)';
-            btnMasuk.innerHTML = 'Absen Masuk (Aktif)';
-            infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}</b> | Mode: <b class="text-green-400">MASUK</b></p>`;
-          }
+          // Jalankan update jam setiap detik
+          updateJamRealTime(); 
+          setInterval(updateJamRealTime, 1000);
         }
       } catch(e) {
         console.error("Gagal memuat setting waktu", e);
+      }
+    }
+
+    // Fungsi Update Jam & Cek Transisi Mode
+    function updateJamRealTime() {
+      if (batasTransisiMenit === null) return;
+
+      const now = new Date();
+      const hh = now.getHours().toString().padStart(2, '0');
+      const mm = now.getMinutes().toString().padStart(2, '0');
+      const ss = now.getSeconds().toString().padStart(2, '0');
+      
+      const currentMenit = (now.getHours() * 60) + now.getMinutes();
+      
+      const infoEl = document.getElementById('indikatorWaktu');
+      const btnMasuk = document.getElementById('btnMasuk');
+      const btnPulang = document.getElementById('btnPulang');
+
+      // Cek apakah waktunya sudah masuk mode PULANG
+      if (currentMenit >= batasTransisiMenit) {
+        // Waktunya Pulang
+        if (currentTipe !== 'pulang') {
+           setTipe('pulang');
+           btnMasuk.disabled = true;
+           btnMasuk.innerHTML = 'Terkunci (Waktu Pulang)';
+           btnPulang.innerHTML = 'Absen Pulang (Aktif)';
+        }
+        infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${hh}:${mm}:${ss}</b> | Mode: <b class="text-blue-400">PULANG</b></p>`;
+      } else {
+        // Waktunya Masuk
+        if (currentTipe !== 'masuk') {
+           setTipe('masuk');
+           btnPulang.disabled = true;
+           btnPulang.innerHTML = 'Terkunci (Waktu Masuk)';
+           btnMasuk.innerHTML = 'Absen Masuk (Aktif)';
+        }
+        infoEl.innerHTML = `<p class="text-sm text-gray-400">Sekarang: <b class="text-white">${hh}:${mm}:${ss}</b> | Mode: <b class="text-green-400">MASUK</b></p>`;
       }
     }
 
@@ -190,7 +204,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initWaktu(); // Cek jam dulu sebelum mulai
+      initWaktu();
       startScanner();
     });
   </script>
