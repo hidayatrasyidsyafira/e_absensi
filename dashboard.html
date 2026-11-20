@@ -152,9 +152,14 @@
       document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
       document.getElementById('roleInfo').textContent = `Login sebagai ${user.role.toUpperCase()}`;
 
+      // Tampilkan panel persetujuan izin untuk Guru DAN Admin
       if (user.role === 'guru' || user.role === 'admin') {
-        document.getElementById('menuGuru').classList.remove('hidden');
         loadPersetujuanIzin();
+      }
+
+      // Tampilkan tombol "Mulai Sesi Mapel" HANYA untuk Guru
+      if (user.role === 'guru') {
+        document.getElementById('menuGuru').classList.remove('hidden');
       }
 
       const res = await API.post('getRekap', { token: Auth.getToken() });
