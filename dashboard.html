@@ -403,7 +403,7 @@
     // ==========================================
     // FITUR WALI KELAS
     // ==========================================
-    async function loadWaliKelas(kelas) {
+        async function loadWaliKelas(kelas) {
       const panel = document.getElementById('panelWaliKelas');
       panel.classList.remove('hidden');
       document.getElementById('infoWaliKelas').textContent = kelas;
@@ -412,8 +412,17 @@
       const options = { day: 'numeric', month: 'short', year: 'numeric' };
       document.getElementById('tanggalWaliKelas').textContent = today.toLocaleDateString('id-ID', options);
 
+      // Tampilkan loading
+      document.getElementById('listWaliKelas').innerHTML = '<div class="text-center text-sm text-gray-400 py-4">Memuat data...</div>';
+
       const res = await API.post('getRekapWaliKelas', { token: Auth.getToken(), kelas });
-      if (!res.success) return;
+      
+      // --- TAMPILKAN ERROR JIKA ADA ---
+      if (!res.success) {
+        document.getElementById('listWaliKelas').innerHTML = `<div class="text-red-500 text-sm bg-red-50 p-3 rounded-lg text-center">Gagal memuat: ${res.message}</div>`;
+        return;
+      }
+      // --------------------------------
 
       const d = res.data;
       document.getElementById('wkTotal').textContent = d.total;
