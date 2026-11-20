@@ -61,6 +61,14 @@
         </div>
       </div>
       <p class="text-xs text-center text-gray-400">Total Siswa Aktif: <span id="statTotalSiswa" class="font-bold">-</span></p>
+
+       <div class="mt-6">
+        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500"></span>
+          Belum Absen Gerbang Hari Ini
+        </h3>
+        <div id="listAlphaGerbang" class="space-y-2"></div>
+      </div>
     </div>
 
     <!-- TAMPILAN SISWA -->
@@ -163,6 +171,21 @@
         document.getElementById('statMapel').textContent = res.data.totalScanMapel;
         document.getElementById('statSesi').textContent = res.data.sesiAktif;
         document.getElementById('statTotalSiswa').textContent = res.data.totalSiswa;
+
+                const listAlpha = document.getElementById('listAlphaGerbang');
+        if (res.data.siswaAlphaGerbang.length === 0) {
+          listAlpha.innerHTML = '<div class="bg-green-50 text-green-700 text-sm p-3 rounded-xl border border-green-200">Luar biasa! Semua siswa sudah absen gerbang hari ini.</div>';
+        } else {
+          listAlpha.innerHTML = res.data.siswaAlphaGerbang.map(s => `
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+              <div>
+                <div class="font-bold text-gray-800 text-sm">${s.nama}</div>
+                <div class="text-xs text-gray-500">${s.kelas}</div>
+              </div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-50 px-2 py-1 rounded">Belum Masuk</div>
+            </div>
+          `).join('');
+        }
       } 
       
       else if (user.role === 'siswa') {
