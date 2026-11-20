@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Siswa — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <a href="dashboard.html" class="text-gray-500 hover:text-blue-600 font-medium">&larr; Kembali</a>
+      <span class="font-semibold text-gray-900 ml-2 border-l pl-4 border-gray-300">Manajemen Siswa</span>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto p-4 mt-4">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-xl font-bold text-gray-800">Daftar Siswa</h1>
+      <button onclick="bukaModalTambah()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm">
+        + Tambah Siswa
+      </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider">
+              <th class="p-3 border-b">Nama / ID</th>
+              <th class="p-3 border-b">NIS / NISN</th>
+              <th class="p-3 border-b">Kelas</th>
+              <th class="p-3 border-b">Status</th>
+              <th class="p-3 border-b text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelSiswa" class="text-sm divide-y divide-gray-100">
+            <!-- Render JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL FORM SISWA -->
+  <div id="modalSiswa" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4" id="modalTitle">Tambah Siswa Baru</h2>
+      <form id="formSiswa" class="space-y-4">
+        <input type="hidden" id="userId" value="">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+            <input type="text" id="inputNama" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">NIS</label>
+            <input type="text" id="inputNis" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">NISN (Isi QR)</label>
+            <input type="text" id="inputNisn" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tingkat</label>
+            <select id="inputTingkat" class="w-full px-3 py-2 border rounded-lg" required>
+              <option value="X">X</option>
+              <option value="XI">XI</option>
+              <option value="XII">XII</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Jurusan</label>
+            <select id="inputJurusan" class="w-full px-3 py-2 border rounded-lg" required>
+              <option value="IPA">IPA</option>
+              <option value="IPS">IPS</option>
+              <option value="BAHASA">BAHASA</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Rombel</label>
+            <input type="number" id="inputRombel" class="w-full px-3 py-2 border rounded-lg" value="1" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">L/P</label>
+            <select id="inputJk" class="w-full px-3 py-2 border rounded-lg" required>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 justify-end pt-4 border-t mt-4">
+          <button type="button" onclick="tutupModal()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700" id="btnSimpan">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const user = Auth.getUser();
+      if (!user || user.role !== 'admin') {
+        alert('Halaman ini hanya untuk Admin.');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      loadDataSiswa();
+    });
+
+    async function loadDataSiswa() {
+      const tbody = document.getElementById('tabelSiswa');
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>';
+      
+      const res = await API.post('getAllSiswa', { token: Auth.getToken() });
+      if (!res.success) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">${res.message}</td></tr>`;
+        return;
+      }
+
+      if (res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data siswa.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = res.data.map(s => {
+        const isAktif = s.status_user === 'aktif';
+        return `
+        <tr class="${isAktif ? '' : 'bg-gray-50 opacity-75'}">
+          <td class="p-3 border-b">
+            <div class="font-bold text-gray-800">${s.nama}</div>
+            <div class="text-xs text-gray-500 font-mono">${s.user_id}</div>
+          </td>
+          <td class="p-3 border-b">
+            <div class="text-gray-800">${s.nis}</div>
+            <div class="text-xs text-gray-500">${s.nisn}</div>
+          </td>
+          <td class="p-3 border-b text-gray-800 font-medium">${s.kelas}</td>
+          <td class="p-3 border-b">
+            <span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${isAktif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${s.status_user}</span>
+          </td>
+          <td class="p-3 border-b text-right space-x-1">
+            <button onclick='bukaModalEdit(${JSON.stringify(s)})' class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200">Edit</button>
+            <button onclick="toggleStatus('${s.user_id}', '${isAktif ? 'nonaktif' : 'aktif'}')" class="px-3 py-1 ${isAktif ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} rounded text-xs font-semibold">
+              ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+          </td>
+        </tr>
+      `}).join('');
+    }
+
+    // --- MODAL LOGIC ---
+    const modal = document.getElementById('modalSiswa');
+    const form = document.getElementById('formSiswa');
+
+    function bukaModalTambah() {
+      document.getElementById('modalTitle').textContent = 'Tambah Siswa Baru';
+      document.getElementById('userId').value = '';
+      form.reset();
+      modal.classList.remove('hidden');
+    }
+
+    function bukaModalEdit(data) {
+      document.getElementById('modalTitle').textContent = 'Edit Data Siswa';
+      document.getElementById('userId').value = data.user_id;
+      document.getElementById('inputNama').value = data.nama;
+      document.getElementById('inputNis').value = data.nis;
+      document.getElementById('inputNisn').value = data.nisn;
+      document.getElementById('inputTingkat').value = data.tingkat;
+      document.getElementById('inputJurusan').value = data.jurusan;
+      document.getElementById('inputRombel').value = data.rombel;
+      document.getElementById('inputJk').value = data.jenis_kelamin;
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModal() {
+      modal.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const userId = document.getElementById('userId').value;
+      const isEdit = userId !== '';
+
+      const payload = {
+        token: Auth.getToken(),
+        user_id: userId,
+        nama: document.getElementById('inputNama').value,
+        nis: document.getElementById('inputNis').value,
+        nisn: document.getElementById('inputNisn').value,
+        tingkat: document.getElementById('inputTingkat').value,
+        jurusan: document.getElementById('inputJurusan').value,
+        rombel: document.getElementById('inputRombel').value,
+        jenis_kelamin: document.getElementById('inputJk').value
+      };
+
+      const action = isEdit ? 'editSiswa' : 'tambahSiswa';
+      const res = await API.post(action, payload);
+
+      if (res.success) {
+        alert(res.message);
+        tutupModal();
+        loadDataSiswa();
+      } else {
+        alert('Gagal: ' + res.message);
+      }
+      btn.disabled = false; btn.textContent = 'Simpan';
+    });
+
+    async function toggleStatus(userId, newStatus) {
+      if (!confirm(`Yakin ingin mengubah status siswa ini menjadi ${newStatus}?`)) return;
+      const res = await API.post('toggleStatusSiswa', { token: Auth.getToken(), user_id: userId, status: newStatus });
+      if (res.success) loadDataSiswa();
+      else alert(res.message);
+    }
+  </script>
+</body>
+</html>
