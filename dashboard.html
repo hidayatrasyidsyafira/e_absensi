@@ -45,6 +45,40 @@
       <div id="listPersetujuanIzin" class="space-y-3"></div>
     </div>
 
+    <!-- PANEL WALI KELAS (KHUSUS GURU) -->
+    <div id="panelWaliKelas" class="hidden mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+        <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
+          <h2 class="font-bold">Rekap Kelas Wali: <span id="infoWaliKelas">-</span></h2>
+          <span class="text-xs bg-blue-500 px-2 py-1 rounded" id="tanggalWaliKelas">-</span>
+        </div>
+        <div class="p-4">
+          <div class="grid grid-cols-4 gap-2 mb-4 text-center">
+            <div class="bg-gray-50 p-2 rounded-lg border">
+              <p class="text-[10px] text-gray-500 font-bold uppercase">Total</p>
+              <p class="text-lg font-bold text-gray-800" id="wkTotal">0</p>
+            </div>
+            <div class="bg-green-50 p-2 rounded-lg border border-green-100">
+              <p class="text-[10px] text-green-600 font-bold uppercase">Hadir</p>
+              <p class="text-lg font-bold text-green-600" id="wkHadir">0</p>
+            </div>
+            <div class="bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+              <p class="text-[10px] text-yellow-600 font-bold uppercase">Izin/Sakit</p>
+              <p class="text-lg font-bold text-yellow-600" id="wkIzin">0</p>
+            </div>
+            <div class="bg-red-50 p-2 rounded-lg border border-red-100">
+              <p class="text-[10px] text-red-600 font-bold uppercase">Alpha</p>
+              <p class="text-lg font-bold text-red-600" id="wkAlpha">0</p>
+            </div>
+          </div>
+          
+          <div class="max-h-60 overflow-y-auto space-y-2 pr-1">
+            <div id="listWaliKelas" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- TAMPILAN ADMIN STATISTIK -->
     <div id="panelAdmin" class="hidden">
       <h2 class="font-bold text-gray-800 mb-3">Statistik Hari Ini</h2>
@@ -150,7 +184,7 @@
       } catch (e) { return str; }
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', async () => {
       if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
       const user = Auth.getUser();
       if (!user) return window.location.href = 'index.html';
@@ -158,26 +192,30 @@
       document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
       document.getElementById('roleInfo').textContent = `Login sebagai ${user.role.toUpperCase()}`;
 
-      // Tampilkan panel persetujuan izin untuk Guru DAN Admin
+      // --- 1. LOGIKA MENU & PANEL PER ROLE ---
       if (user.role === 'guru' || user.role === 'admin') {
-        loadPersetujuanIzin();
+        loadPersetujuanIzin(); // Guru & Admin bisa melihat persetujuan izin
       }
 
-     
-            // Logika Menu Berdasarkan Role
       if (user.role === 'guru') {
         document.getElementById('menuGuru').classList.remove('hidden');
         document.getElementById('btnMulaiSesi').classList.remove('hidden');
         document.getElementById('menuAdminSiswa').classList.add('hidden');
+
+        // Cek apakah guru ini menjabat sebagai Wali Kelas
+        if (user.wali_kelas) {
+          loadWaliKelas(user.wali_kelas);
+        }
       } 
       
       if (user.role === 'admin') {
         document.getElementById('menuGuru').classList.remove('hidden'); // Munculkan wadah
-        document.getElementById('btnMulaiSesi').classList.add('hidden'); // Sembunyikan tombol guru
-        document.getElementById('menuAdminSiswa').classList.remove('hidden'); // Munculkan tombol admin
+        document.getElementById('btnMulaiSesi').classList.add('hidden'); // Sembunyikan tombol sesi guru
+        document.getElementById('menuAdminSiswa').classList.remove('hidden'); // Munculkan tombol manajemen siswa
         document.getElementById('menuAdminSiswa').classList.add('flex');
       }
 
+      // --- 2. LOAD DATA REKAP UTAMA (Statistik & Riwayat) ---
       const res = await API.post('getRekap', { token: Auth.getToken() });
       if (!res.success) {
         document.getElementById('greeting').textContent = 'Gagal memuat data.';
@@ -185,6 +223,7 @@
         return;
       }
 
+      // --- 3. RENDER BERDASARKAN ROLE ---
       if (user.role === 'admin') {
         document.getElementById('panelAdmin').classList.remove('hidden');
         document.getElementById('statGerbang').textContent = res.data.hadirGerbang;
@@ -193,7 +232,8 @@
         document.getElementById('statSesi').textContent = res.data.sesiAktif;
         document.getElementById('statTotalSiswa').textContent = res.data.totalSiswa;
 
-                const listAlpha = document.getElementById('listAlphaGerbang');
+        // Render daftar siswa yang belum absen gerbang (Alpha)
+        const listAlpha = document.getElementById('listAlphaGerbang');
         if (res.data.siswaAlphaGerbang.length === 0) {
           listAlpha.innerHTML = '<div class="bg-green-50 text-green-700 text-sm p-3 rounded-xl border border-green-200">Luar biasa! Semua siswa sudah absen gerbang hari ini.</div>';
         } else {
@@ -212,7 +252,7 @@
       else if (user.role === 'siswa') {
         document.getElementById('panelSiswa').classList.remove('hidden');
         
-        // Render Gerbang
+        // Render Riwayat Gerbang Siswa
         const listG = document.getElementById('listGerbang');
         if (res.data.gerbang.length === 0) {
           listG.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
@@ -231,7 +271,7 @@
           `).join('');
         }
 
-        // Render Mapel
+        // Render Riwayat Mapel Siswa
         const listM = document.getElementById('listMapel');
         if (res.data.mapel.length === 0) {
           listM.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
@@ -254,7 +294,6 @@
         loadRiwayatIzinSiswa();
       }
     });
-
     // ==========================================
     // FITUR IZIN (SISWA)
     // ==========================================
@@ -361,6 +400,51 @@
       }
     }
 
+    // ==========================================
+    // FITUR WALI KELAS
+    // ==========================================
+    async function loadWaliKelas(kelas) {
+      const panel = document.getElementById('panelWaliKelas');
+      panel.classList.remove('hidden');
+      document.getElementById('infoWaliKelas').textContent = kelas;
+      
+      const today = new Date();
+      const options = { day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('tanggalWaliKelas').textContent = today.toLocaleDateString('id-ID', options);
+
+      const res = await API.post('getRekapWaliKelas', { token: Auth.getToken(), kelas });
+      if (!res.success) return;
+
+      const d = res.data;
+      document.getElementById('wkTotal').textContent = d.total;
+      document.getElementById('wkHadir').textContent = d.hadir;
+      document.getElementById('wkIzin').textContent = d.izinSakit;
+      document.getElementById('wkAlpha').textContent = d.alpha;
+
+      const list = document.getElementById('listWaliKelas');
+      if (d.detail.length === 0) {
+        list.innerHTML = '<div class="text-center text-sm text-gray-400 py-4">Belum ada data siswa.</div>';
+        return;
+      }
+
+      list.innerHTML = d.detail.map(s => {
+        let badgeColor = 'bg-gray-100 text-gray-600';
+        if (s.status === 'hadir') badgeColor = 'bg-green-100 text-green-700';
+        if (s.status === 'sakit' || s.status === 'izin') badgeColor = 'bg-yellow-100 text-yellow-700';
+        if (s.status === 'alpha') badgeColor = 'bg-red-100 text-red-700';
+
+        return `
+          <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
+            <div>
+              <div class="text-sm font-semibold text-gray-800">${s.nama}</div>
+              <div class="text-[10px] text-gray-500">NISN: ${s.nisn}</div>
+            </div>
+            <span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${badgeColor}">${s.status}</span>
+          </div>
+        `;
+      }).join('');
+    }
+    
     // Logic Tab Siswa
     function switchTab(tab) {
       const btnG = document.getElementById('tabBtnGerbang');
