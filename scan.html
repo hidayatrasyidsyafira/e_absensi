@@ -63,12 +63,25 @@
     let html5QrCode;
 
     // Load Setting Waktu & Otomatis Pilih Mode
-    async function initWaktu() {
+        async function initWaktu() {
       try {
         const res = await API.get('getSettings');
         if (res.success) {
           const s = res.data;
-          const jamPulang = s['jam_pulang'] || '15:00';
+          let jamPulang = s['jam_pulang'] || '15:00';
+          
+          // --- PENGAMAN FORMAT WAKTU ---
+          // Jika backend masih mengirim format Date (ISO) atau format aneh
+          if (String(jamPulang).includes('T')) {
+             const d = new Date(jamPulang);
+             jamPulang = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+          } else if (typeof jamPulang === 'string') {
+             // Jika tertulis 7:00, jadikan 07:00
+             const parts = jamPulang.split(':');
+             if(parts.length >= 2) jamPulang = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+          }
+          // ------------------------------
+
           const [hP, mP] = jamPulang.split(':').map(Number);
           const batasTransisi = (hP * 60) + mP - 60; // 1 jam sebelum pulang
 
@@ -78,6 +91,8 @@
           const infoEl = document.getElementById('indikatorWaktu');
           const btnMasuk = document.getElementById('btnMasuk');
           const btnPulang = document.getElementById('btnPulang');
+
+          console.log("Cek Waktu -> Sekarang:", currentMenit, "Menit | Batas Transisi:", batasTransisi, "Menit");
 
           if (currentMenit >= batasTransisi) {
             // Waktunya Pulang
