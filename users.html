@@ -99,6 +99,7 @@
         return;
       }
       loadDataUser();
+      document.getElementById('headerTanggalUsers').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     });
 
     async function loadDataUser() {
