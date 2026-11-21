@@ -3,78 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Absensi QR</title>
+  <title>Beranda — Absensi QR</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Sembunyikan scrollbar bawaan iframe agar lebih rapi */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen pb-10">
+<body class="bg-gray-50 min-h-screen p-4 md:p-6 pb-20">
 
-  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-      </div>
-      <span class="font-semibold text-gray-900 hidden sm:block">Absensi QR</span>
-    </div>
-    <button onclick="Auth.logout()" class="text-sm text-gray-600 hover:text-red-600 font-medium">Keluar</button>
-  </nav>
+  <!-- Header Sambutan -->
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-800" id="greeting">Memuat...</h1>
+    <p class="text-sm text-gray-500" id="roleInfo">-</p>
+  </div>
 
-  <main class="max-w-3xl mx-auto p-4 mt-4">
+  <!-- ========================================== -->
+  <!-- TAMPILAN ADMIN (Statistik & Rekap)          -->
+  <!-- ========================================== -->
+  <div id="panelAdmin" class="hidden space-y-6">
+    <h2 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+      <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      Statistik Kehadiran Hari Ini
+    </h2>
     
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900" id="greeting">Memuat...</h1>
-      <p class="text-gray-500 text-sm" id="roleInfo">-</p>
+    <!-- Kotak Statistik -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+        <p class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Hadir Gerbang</p>
+        <div class="flex items-end gap-2">
+          <p class="text-3xl font-bold text-gray-800" id="statGerbang">0</p>
+          <p class="text-sm text-gray-400 mb-1">/ <span id="statTotalSiswa">0</span></p>
+        </div>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
+        <p class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Terlambat</p>
+        <p class="text-3xl font-bold text-gray-800" id="statTerlambat">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+        <p class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Scan Mapel</p>
+        <p class="text-3xl font-bold text-gray-800" id="statMapel">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+        <p class="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Sesi Aktif</p>
+        <p class="text-3xl font-bold text-gray-800" id="statSesi">0</p>
+      </div>
     </div>
 
-    <!-- MENU GURU/ADMIN -->
-    <div id="menuGuru" class="hidden mb-6">
-      <a href="sesi.html" id="btnMulaiSesi" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        Mulai Sesi Mapel (Guru)
-      </a>
-
-      <!-- TAMBAHKAN INI -->
-      <a href="siswa.html" id="menuAdminSiswa" class="hidden items-center justify-center gap-2 bg-white border-2 border-blue-600 text-blue-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        Manajemen Data Siswa (Admin)
-      </a>
-
-      <!-- Tombol Manajemen Guru/Admin -->
-      <a href="users.html" id="menuAdminGuru" class="hidden items-center justify-center gap-2 bg-white border-2 border-purple-600 text-purple-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        Manajemen Guru & Admin
-      </a>
-
-      <!-- Tombol Manajemen Mapel -->
-      <a href="mapel.html" id="menuAdminMapel" class="hidden items-center justify-center gap-2 bg-white border-2 border-green-600 text-green-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        Manajemen Mata Pelajaran
-      </a>
-
-      <!-- Tombol Manajemen Jadwal -->
-      <a href="jadwal.html" id="menuAdminJadwal" class="hidden items-center justify-center gap-2 bg-white border-2 border-yellow-500 text-yellow-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        Manajemen Jadwal Pelajaran
-      </a>
-
-      <!-- Tombol Pengaturan -->
-      <a href="settings.html" id="menuAdminSetting" class="hidden items-center justify-center gap-2 bg-white border-2 border-gray-400 text-gray-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        Pengaturan Sistem
-      </a>
+    <!-- Rekap Siswa Belum Absen (Alpha) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-4 border-b border-gray-100 bg-red-50 flex items-center justify-between">
+        <h3 class="font-bold text-red-700 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          Siswa Belum Absen Gerbang Hari Ini
+        </h3>
+      </div>
+      <div id="listAlphaGerbang" class="max-h-[300px] overflow-y-auto p-2 space-y-1">
+        <!-- Render JS -->
+      </div>
     </div>
+  </div>
 
-    <!-- PANEL GURU/ADMIN: PERSETUJUAN IZIN -->
-    <div id="panelPersetujuanIzin" class="hidden mb-6">
-      <h2 class="font-bold text-gray-800 mb-3">Persetujuan Izin Siswa</h2>
-      <div id="listPersetujuanIzin" class="space-y-3"></div>
-    </div>
-
-    <!-- PANEL WALI KELAS (KHUSUS GURU) -->
-    <div id="panelWaliKelas" class="hidden mb-6">
+  <!-- ========================================== -->
+  <!-- TAMPILAN GURU (Persetujuan Izin & Wali Kelas) -->
+  <!-- ========================================== -->
+  <div id="panelGuru" class="hidden space-y-6">
+    
+    <!-- Panel Wali Kelas (Jika Guru adalah Wali Kelas) -->
+    <div id="panelWaliKelas" class="hidden">
       <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
         <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
-          <h2 class="font-bold">Rekap Kelas Wali: <span id="infoWaliKelas">-</span></h2>
-          <span class="text-xs bg-blue-500 px-2 py-1 rounded" id="tanggalWaliKelas">-</span>
+          <h2 class="font-bold flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            Rekap Kelas Wali: <span id="infoWaliKelas">-</span>
+          </h2>
+          <span class="text-xs bg-blue-700/50 px-2 py-1 rounded" id="tanggalWaliKelas">-</span>
         </div>
         <div class="p-4">
           <div class="grid grid-cols-4 gap-2 mb-4 text-center">
@@ -95,73 +100,44 @@
               <p class="text-lg font-bold text-red-600" id="wkAlpha">0</p>
             </div>
           </div>
-          
           <div class="max-h-60 overflow-y-auto space-y-2 pr-1">
             <div id="listWaliKelas" class="space-y-2"></div>
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- TAMPILAN ADMIN STATISTIK -->
-    <div id="panelAdmin" class="hidden">
-      <h2 class="font-bold text-gray-800 mb-3">Statistik Hari Ini</h2>
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Hadir Gerbang</p>
-          <p class="text-2xl font-bold text-green-600" id="statGerbang">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Terlambat</p>
-          <p class="text-2xl font-bold text-yellow-500" id="statTerlambat">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Scan Mapel</p>
-          <p class="text-2xl font-bold text-blue-600" id="statMapel">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Sesi Aktif</p>
-          <p class="text-2xl font-bold text-purple-600" id="statSesi">0</p>
-        </div>
-      </div>
-      <p class="text-xs text-center text-gray-400">Total Siswa Aktif: <span id="statTotalSiswa" class="font-bold">-</span></p>
 
-       <div class="mt-6">
-        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-red-500"></span>
-          Belum Absen Gerbang Hari Ini
-        </h3>
-        <div id="listAlphaGerbang" class="space-y-2"></div>
-      </div>
+    <!-- Panel Persetujuan Izin -->
+    <div>
+      <h2 class="font-bold text-gray-800 text-lg mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Persetujuan Izin Siswa
+      </h2>
+      <div id="listPersetujuanIzin" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAMPILAN SISWA (Riwayat)                    -->
+  <!-- ========================================== -->
+  <div id="panelSiswa" class="hidden">
+    <div class="flex gap-2 mb-4 bg-gray-200 p-1 rounded-xl">
+      <button onclick="switchTab('gerbang')" id="tabBtnGerbang" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all">Riwayat Gerbang</button>
+      <button onclick="switchTab('mapel')" id="tabBtnMapel" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Riwayat Mapel</button>
+      <button onclick="switchTab('izin')" id="tabBtnIzin" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Izin / Sakit</button>
     </div>
 
-    <!-- TAMPILAN SISWA -->
-    <div id="panelSiswa" class="hidden">
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-4 bg-gray-200 p-1 rounded-xl">
-        <button onclick="switchTab('gerbang')" id="tabBtnGerbang" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all">Gerbang</button>
-        <button onclick="switchTab('mapel')" id="tabBtnMapel" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Mapel</button>
-        <button onclick="switchTab('izin')" id="tabBtnIzin" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Izin</button>
-      </div>
-
-      <!-- List Gerbang -->
-      <div id="listGerbang" class="space-y-2"></div>
-      
-      <!-- List Mapel -->
-      <div id="listMapel" class="space-y-2 hidden"></div>
-
-      <!-- List Izin -->
-      <div id="listIzin" class="space-y-2 hidden">
-        <button onclick="document.getElementById('modalIzin').classList.remove('hidden')" class="w-full bg-blue-100 text-blue-700 font-semibold py-3 rounded-xl mb-2 hover:bg-blue-200 transition-colors">
-          + Ajukan Izin / Sakit
-        </button>
-        <div id="riwayatIzinSiswa" class="space-y-2"></div>
-      </div>
+    <div id="listGerbang" class="space-y-2"></div>
+    <div id="listMapel" class="space-y-2 hidden"></div>
+    <div id="listIzin" class="space-y-2 hidden">
+      <button onclick="document.getElementById('modalIzin').classList.remove('hidden')" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl mb-4 hover:bg-blue-700 transition-colors shadow-sm">
+        + Ajukan Izin / Sakit
+      </button>
+      <div id="riwayatIzinSiswa" class="space-y-2"></div>
     </div>
+  </div>
 
-  </main>
-
-  <!-- MODAL FORM IZIN (Disembunyikan) -->
+  <!-- MODAL FORM IZIN -->
   <div id="modalIzin" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
       <h2 class="text-xl font-bold mb-4">Formulir Pengajuan Izin</h2>
@@ -208,50 +184,25 @@
       } catch (e) { return str; }
     }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-      if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
+    window.addEventListener('DOMContentLoaded', async () => {
       const user = Auth.getUser();
-      if (!user) return window.location.href = 'index.html';
+      if (!user) return;
 
       document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
       document.getElementById('roleInfo').textContent = `Login sebagai ${user.role.toUpperCase()}`;
 
-      // --- 1. LOGIKA MENU & PANEL PER ROLE ---
-      if (user.role === 'guru' || user.role === 'admin') {
-        loadPersetujuanIzin(); // Guru & Admin bisa melihat persetujuan izin
-      }
-
-      if (user.role === 'guru') {
-        document.getElementById('menuGuru').classList.remove('hidden');
-        document.getElementById('btnMulaiSesi').classList.remove('hidden');
-        document.getElementById('menuAdminSiswa').classList.add('hidden');
-
-        // Cek apakah guru ini menjabat sebagai Wali Kelas
-        if (user.wali_kelas) {
-          loadWaliKelas(user.wali_kelas);
-        }
-      } 
-      
+      // Tampilkan Panel Berdasarkan Role
       if (user.role === 'admin') {
-        document.getElementById('menuGuru').classList.remove('hidden'); // Munculkan wadah
-        document.getElementById('btnMulaiSesi').classList.add('hidden'); // Sembunyikan tombol sesi guru
-        document.getElementById('menuAdminSiswa').classList.remove('hidden'); // Munculkan tombol manajemen siswa
-        document.getElementById('menuAdminSiswa').classList.add('flex');
-
-        document.getElementById('menuAdminGuru').classList.remove('hidden');
-        document.getElementById('menuAdminGuru').classList.add('flex');
-
-        document.getElementById('menuAdminMapel').classList.remove('hidden');
-        document.getElementById('menuAdminMapel').classList.add('flex');
-
-        document.getElementById('menuAdminJadwal').classList.remove('hidden');
-        document.getElementById('menuAdminJadwal').classList.add('flex');
-
-        document.getElementById('menuAdminSetting').classList.remove('hidden');
-        document.getElementById('menuAdminSetting').classList.add('flex');
+        document.getElementById('panelAdmin').classList.remove('hidden');
+      } else if (user.role === 'guru') {
+        document.getElementById('panelGuru').classList.remove('hidden');
+        loadPersetujuanIzin();
+        if (user.wali_kelas) loadWaliKelas(user.wali_kelas);
+      } else if (user.role === 'siswa') {
+        document.getElementById('panelSiswa').classList.remove('hidden');
       }
 
-      // --- 2. LOAD DATA REKAP UTAMA (Statistik & Riwayat) ---
+      // Load Data Rekap
       const res = await API.post('getRekap', { token: Auth.getToken() });
       if (!res.success) {
         document.getElementById('greeting').textContent = 'Gagal memuat data.';
@@ -259,36 +210,31 @@
         return;
       }
 
-      // --- 3. RENDER BERDASARKAN ROLE ---
       if (user.role === 'admin') {
-        document.getElementById('panelAdmin').classList.remove('hidden');
         document.getElementById('statGerbang').textContent = res.data.hadirGerbang;
         document.getElementById('statTerlambat').textContent = res.data.terlambatGerbang;
         document.getElementById('statMapel').textContent = res.data.totalScanMapel;
         document.getElementById('statSesi').textContent = res.data.sesiAktif;
         document.getElementById('statTotalSiswa').textContent = res.data.totalSiswa;
 
-        // Render daftar siswa yang belum absen gerbang (Alpha)
         const listAlpha = document.getElementById('listAlphaGerbang');
         if (res.data.siswaAlphaGerbang.length === 0) {
-          listAlpha.innerHTML = '<div class="bg-green-50 text-green-700 text-sm p-3 rounded-xl border border-green-200">Luar biasa! Semua siswa sudah absen gerbang hari ini.</div>';
+          listAlpha.innerHTML = '<div class="bg-green-50 text-green-700 text-sm p-3 m-2 rounded-xl border border-green-200">Luar biasa! Semua siswa sudah absen gerbang hari ini.</div>';
         } else {
           listAlpha.innerHTML = res.data.siswaAlphaGerbang.map(s => `
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
               <div>
                 <div class="font-bold text-gray-800 text-sm">${s.nama}</div>
                 <div class="text-xs text-gray-500">${s.kelas}</div>
               </div>
-              <div class="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-50 px-2 py-1 rounded">Belum Masuk</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-100 px-2 py-1 rounded">Belum Masuk</div>
             </div>
           `).join('');
         }
       } 
       
       else if (user.role === 'siswa') {
-        document.getElementById('panelSiswa').classList.remove('hidden');
-        
-        // Render Riwayat Gerbang Siswa
+        // Render Gerbang
         const listG = document.getElementById('listGerbang');
         if (res.data.gerbang.length === 0) {
           listG.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
@@ -307,7 +253,7 @@
           `).join('');
         }
 
-        // Render Riwayat Mapel Siswa
+        // Render Mapel
         const listM = document.getElementById('listMapel');
         if (res.data.mapel.length === 0) {
           listM.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
@@ -326,10 +272,10 @@
           `).join('');
         }
 
-        // Muat Data Izin Siswa
         loadRiwayatIzinSiswa();
       }
     });
+
     // ==========================================
     // FITUR IZIN (SISWA)
     // ==========================================
@@ -386,28 +332,22 @@
     });
 
     // ==========================================
-    // FITUR PERSETUJUAN IZIN (GURU/ADMIN)
+    // FITUR PERSETUJUAN IZIN (GURU)
     // ==========================================
-        async function loadPersetujuanIzin() {
+    async function loadPersetujuanIzin() {
       const res = await API.post('getIzin', { token: Auth.getToken() });
       const box = document.getElementById('listPersetujuanIzin');
-      const panel = document.getElementById('panelPersetujuanIzin');
       
-      // Tampilkan panelnya terlebih dahulu
-      panel.classList.remove('hidden');
-
       if (!res.success) {
         box.innerHTML = `<div class="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl border border-red-200">Gagal memuat: ${res.message}</div>`;
         return;
       }
 
-      // Jika tidak ada data
       if (res.data.list.length === 0) {
         box.innerHTML = '<div class="text-center py-4 text-gray-500 text-sm bg-white rounded-xl border border-gray-100">Tidak ada pengajuan izin yang menunggu persetujuan.</div>';
         return;
       }
 
-      // Render List
       box.innerHTML = res.data.list.map(i => `
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div class="flex justify-between items-start mb-2">
@@ -429,36 +369,27 @@
     async function updateIzin(id, status) {
       if (!confirm(`Yakin ingin menandai izin ini sebagai ${status}?`)) return;
       const res = await API.post('updateStatusIzin', { token: Auth.getToken(), id, status });
-      if (res.success) {
-        loadPersetujuanIzin(); // Refresh list
-      } else {
-        alert(res.message);
-      }
+      if (res.success) loadPersetujuanIzin();
+      else alert(res.message);
     }
 
     // ==========================================
-    // FITUR WALI KELAS
+    // FITUR WALI KELAS (GURU)
     // ==========================================
-        async function loadWaliKelas(kelas) {
-      const panel = document.getElementById('panelWaliKelas');
-      panel.classList.remove('hidden');
+    async function loadWaliKelas(kelas) {
+      document.getElementById('panelWaliKelas').classList.remove('hidden');
       document.getElementById('infoWaliKelas').textContent = kelas;
       
       const today = new Date();
-      const options = { day: 'numeric', month: 'short', year: 'numeric' };
-      document.getElementById('tanggalWaliKelas').textContent = today.toLocaleDateString('id-ID', options);
-
-      // Tampilkan loading
+      document.getElementById('tanggalWaliKelas').textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
       document.getElementById('listWaliKelas').innerHTML = '<div class="text-center text-sm text-gray-400 py-4">Memuat data...</div>';
 
       const res = await API.post('getRekapWaliKelas', { token: Auth.getToken(), kelas });
       
-      // --- TAMPILKAN ERROR JIKA ADA ---
       if (!res.success) {
         document.getElementById('listWaliKelas').innerHTML = `<div class="text-red-500 text-sm bg-red-50 p-3 rounded-lg text-center">Gagal memuat: ${res.message}</div>`;
         return;
       }
-      // --------------------------------
 
       const d = res.data;
       document.getElementById('wkTotal').textContent = d.total;
@@ -489,7 +420,7 @@
         `;
       }).join('');
     }
-    
+
     // Logic Tab Siswa
     function switchTab(tab) {
       const btnG = document.getElementById('tabBtnGerbang');
@@ -499,11 +430,9 @@
       const listM = document.getElementById('listMapel');
       const listI = document.getElementById('listIzin');
 
-      // Reset classes
       [btnG, btnM, btnI].forEach(b => b.className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all');
       [listG, listM, listI].forEach(l => l.classList.add('hidden'));
 
-      // Set active
       if (tab === 'gerbang') {
         btnG.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
         listG.classList.remove('hidden');
