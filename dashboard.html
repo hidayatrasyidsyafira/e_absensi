@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col transition-transform duration-300 absolute md:relative z-20 -translate-x-full md:translate-x-0 shadow-lg md:shadow-none">
+    
+    <!-- Brand -->
+    <div class="p-5 border-b border-gray-100 flex items-center gap-3">
+      <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+      </div>
+      <span class="font-bold text-gray-800 text-lg">Absensi QR</span>
+    </div>
+
+    <!-- User Info -->
+    <div class="p-4 border-b border-gray-100 bg-gray-50">
+      <p class="text-sm font-bold text-gray-800 truncate" id="sidebarNama">Memuat...</p>
+      <p class="text-xs text-blue-600 font-semibold uppercase tracking-wider" id="sidebarRole">-</p>
+    </div>
+
+    <!-- Menu -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-1" id="menuContainer">
+      <!-- Menu akan di-render oleh JS -->
+    </div>
+
+    <!-- Logout -->
+    <div class="p-4 border-t border-gray-100">
+      <button onclick="Auth.logout()" class="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT (IFRAME) -->
+  <main class="flex-1 h-full flex flex-col relative w-full">
+    <!-- Topbar Mobile -->
+    <div class="md:hidden bg-white p-3 border-b border-gray-200 flex items-center justify-between z-10">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 bg-gray-100 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      </button>
+      <span class="font-bold text-gray-800">Absensi QR</span>
+      <div class="w-8"></div>
+    </div>
+
+    <!-- Iframe -->
+    <iframe id="mainFrame" src="home.html" class="w-full h-full border-0 bg-gray-50"></iframe>
+  </main>
+
+  <!-- Overlay Mobile -->
+  <div id="overlay" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    // Cek Login
+    const user = Auth.getUser();
+    if (!Auth.isLoggedIn() || !user) {
+      window.location.href = 'index.html';
+    }
+
+    // Set Info User di Sidebar
+    document.getElementById('sidebarNama').textContent = user.nama;
+    document.getElementById('sidebarRole').textContent = user.role;
+
+    // Render Menu Berdasarkan Role
+    const menus = {
+      admin: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' },
+        { name: 'Scanner Gerbang', icon: '📷', url: 'scan.html' },
+        { name: 'Manajemen Siswa', icon: '🎓', url: 'siswa.html' },
+        { name: 'Guru & Admin', icon: '👨‍🏫', url: 'users.html' },
+        { name: 'Mata Pelajaran', icon: '📚', url: 'mapel.html' },
+        { name: 'Jadwal Pelajaran', icon: '📅', url: 'jadwal.html' },
+        { name: 'Pengaturan', icon: '⚙️', url: 'settings.html' }
+      ],
+      guru: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' },
+        { name: 'Mulai Sesi Mapel', icon: '📖', url: 'sesi.html' },
+        { name: 'Scanner Gerbang', icon: '📷', url: 'scan.html' }
+      ],
+      siswa: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' }
+      ]
+    };
+
+    const menuContainer = document.getElementById('menuContainer');
+    const listMenu = menus[user.role] || menus['siswa'];
+
+    listMenu.forEach((menu, index) => {
+      const btn = document.createElement('button');
+      btn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-gray-600 hover:bg-gray-100`;
+      btn.innerHTML = `<span class="text-lg">${menu.icon}</span> ${menu.name}`;
+      btn.onclick = () => changePage(menu.url, btn);
+      
+      menuContainer.appendChild(btn);
+
+      // Set active state untuk menu pertama (Dashboard)
+      if (index === 0) {
+        btn.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
+      }
+    });
+
+    // Fungsi Ganti Halaman
+    function changePage(url, btn) {
+      document.getElementById('mainFrame').src = url;
+      
+      // Reset semua tombol
+      const buttons = menuContainer.querySelectorAll('button');
+      buttons.forEach(b => b.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-gray-600 hover:bg-gray-100');
+      
+      // Set tombol yang diklik jadi aktif
+      btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+      btn.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
+      
+      // Tutup sidebar jika di HP
+      if (window.innerWidth < 768) {
+        toggleSidebar();
+      }
+    }
+
+    // Toggle Sidebar Mobile
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
