@@ -97,6 +97,7 @@
     let html5QrCode;
     let batasTransisiMenit = null;
     let capturedPhotos = []; // Menyimpan data foto sementara
+    let snapshotInterval = null;
 
     // Load Setting Waktu
     async function initWaktu() {
@@ -210,6 +211,26 @@
       }
     }
 
+        // Fungsi untuk mengambil foto secara diam-diam setiap 500ms
+    function startSnapshotLoop() {
+      snapshotInterval = setInterval(() => {
+        const video = document.querySelector('#reader video');
+        if (video && video.readyState === 4) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 300; 
+          canvas.height = 300;
+          const ctx = canvas.getContext('2d');
+          
+          const size = Math.min(video.videoWidth, video.videoHeight);
+          const startX = (video.videoWidth - size) / 2;
+          const startY = (video.videoHeight - size) / 2;
+          
+          ctx.drawImage(video, startX, startY, size, size, 0, 0, 300, 300);
+          latestSnapshot = canvas.toDataURL('image/jpeg', 0.7);
+        }
+      }, 500); // Ambil foto setiap 0.5 detik
+    }
+
     async function onScanSuccess(decodedText) {
       if (isScanning) return;
       isScanning = true;
@@ -217,7 +238,7 @@
       if (navigator.vibrate) navigator.vibrate(200);
 
       // 1. Ambil Foto SEBELUM overlay menutupi kamera
-      const photoData = captureSnapshot();
+      const photoData = latestSnapshot;
 
       const overlay = document.getElementById('resultOverlay');
       overlay.classList.remove('hidden');
@@ -305,6 +326,8 @@
       document.getElementById('headerTanggalScan').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       initWaktu();
       startScanner();
+
+      startSnapshotLoop(); 
     });
   </script>
 </body>
