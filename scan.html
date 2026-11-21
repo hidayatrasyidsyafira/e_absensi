@@ -94,19 +94,143 @@
   <script>
     let currentTipe = 'masuk';
     let isScanning = false;
-    let html5QrCode;
     let batasTransisiMenit = null;
-    let capturedPhotos = []; // Menyimpan data foto sementara
+    let latestSnapshot = null;
     let snapshotInterval = null;
+    let barcodeBuffer = ''; // Menampung ketikan dari alat scanner
 
-    // Load Setting Waktu
+    // 1. Inisialisasi Kamera (Hanya untuk Preview & Foto)
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); // Gunakan kamera depan (user)
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.className = "w-full h-full object-cover transform -scale-x-100"; // Efek cermin
+        
+        const container = document.getElementById('reader');
+        container.innerHTML = ''; // Hapus div bawaan html5-qrcode
+        container.appendChild(video);
+      } catch (err) {
+        alert("Gagal mengakses kamera: " + err);
+      }
+    }
+
+    // 2. Fungsi Ambil Foto Background
+    function startSnapshotLoop() {
+      snapshotInterval = setInterval(() => {
+        const video = document.querySelector('#reader video');
+        if (video && video.readyState === 4) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 300; 
+          canvas.height = 300;
+          const ctx = canvas.getContext('2d');
+          
+          const size = Math.min(video.videoWidth, video.videoHeight);
+          const startX = (video.videoWidth - size) / 2;
+          const startY = (video.videoHeight - size) / 2;
+          
+          // Efek mirror agar hasil foto tidak terbalik
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, startX, startY, size, size, 0, 0, 300, 300);
+          
+          latestSnapshot = canvas.toDataURL('image/jpeg', 0.7);
+        }
+      }, 500); 
+    }
+
+    // 3. Mendengarkan Input dari Barcode Scanner
+    window.addEventListener('keydown', (e) => {
+      // Barcode scanner biasanya mengirim karakter sangat cepat dan diakhiri dengan 'Enter'
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) { // Pastikan bukan tombol enter iseng
+          processBarcode(barcodeBuffer);
+        }
+        barcodeBuffer = ''; // Reset buffer
+      } else {
+        // Hanya menerima angka/huruf (abaikan Shift, Ctrl, dll)
+        if (e.key.length === 1) {
+          barcodeBuffer += e.key;
+        }
+      }
+    });
+
+    // 4. Proses Data Barcode
+    async function processBarcode(decodedText) {
+      if (isScanning) return;
+      isScanning = true;
+
+      // Efek Suara Beep (Opsional, jika browser mendukung)
+      playBeep();
+
+      const photoData = latestSnapshot;
+
+      const overlay = document.getElementById('resultOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      document.getElementById('resultIcon').textContent = '⏳';
+      document.getElementById('resultName').textContent = 'Memproses...';
+      document.getElementById('resultKelas').textContent = decodedText;
+      document.getElementById('resultStatus').className = 'hidden';
+
+      const res = await API.post('absenGerbang', { nisn: decodedText, tipe: currentTipe });
+      
+      if (res.success) {
+        document.getElementById('resultIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
+        document.getElementById('resultName').textContent = res.data.nama;
+        document.getElementById('resultKelas').textContent = res.data.kelas;
+        
+        const statEl = document.getElementById('resultStatus');
+        statEl.classList.remove('hidden');
+        if (res.data.status === 'tepat') {
+          statEl.textContent = `Masuk Tepat Waktu - ${res.data.jam}`;
+          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-green-500 text-white shadow-lg';
+        } else {
+          statEl.textContent = `Terlambat - ${res.data.jam}`;
+          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-yellow-500 text-white shadow-lg';
+        }
+
+        if (photoData) addPhotoToWall(photoData, res.data.nama, res.data.kelas, res.data.jam, res.data.status);
+      } else {
+        document.getElementById('resultIcon').textContent = '❌';
+        document.getElementById('resultName').textContent = 'Gagal';
+        
+        const statEl = document.getElementById('resultStatus');
+        statEl.classList.remove('hidden');
+        statEl.textContent = res.message;
+        statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-red-500 text-white shadow-lg';
+      }
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        isScanning = false;
+      }, 2000); // Lebih cepat (2 detik) karena pakai barcode
+    }
+
+    // Fungsi Beep Suara
+    function playBeep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1000, ctx.currentTime); 
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1); // Bunyi 0.1 detik
+      } catch(e) {}
+    }
+
+    // --- Sisa Fungsi Bawaan (Waktu, Tipe, Grid) ---
     async function initWaktu() {
       try {
         const res = await API.get('getSettings');
         if (res.success) {
           const s = res.data;
           let jamPulang = s['jam_pulang'] || '15:00';
-          
           if (String(jamPulang).includes('T')) {
              const d = new Date(jamPulang);
              jamPulang = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
@@ -114,27 +238,20 @@
              const parts = jamPulang.split(':');
              if(parts.length >= 2) jamPulang = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
           }
-
           const [hP, mP] = jamPulang.split(':').map(Number);
-          batasTransisiMenit = (hP * 60) + mP - 60; // 1 jam sebelum pulang
-
+          batasTransisiMenit = (hP * 60) + mP - 60; 
           updateJamRealTime(); 
           setInterval(updateJamRealTime, 1000);
         }
-      } catch(e) {
-        console.error("Gagal memuat setting waktu", e);
-      }
+      } catch(e) {}
     }
 
-    // Fungsi Update Jam & Cek Transisi Mode
     function updateJamRealTime() {
       if (batasTransisiMenit === null) return;
-
       const now = new Date();
       const hh = now.getHours().toString().padStart(2, '0');
       const mm = now.getMinutes().toString().padStart(2, '0');
       const ss = now.getSeconds().toString().padStart(2, '0');
-      
       const currentMenit = (now.getHours() * 60) + now.getMinutes();
       
       const infoEl = document.getElementById('indikatorWaktu');
@@ -164,7 +281,6 @@
       currentTipe = tipe;
       const btnMasuk = document.getElementById('btnMasuk');
       const btnPulang = document.getElementById('btnPulang');
-
       if (tipe === 'masuk') {
         btnMasuk.className = 'flex-1 py-3 rounded-lg font-bold transition-all text-sm uppercase tracking-wider bg-blue-600 text-white shadow-md';
         if (!btnPulang.disabled) btnPulang.className = 'flex-1 py-3 rounded-lg font-bold transition-all text-sm uppercase tracking-wider text-gray-400 hover:bg-gray-700';
@@ -174,131 +290,13 @@
       }
     }
 
-    function startScanner() {
-      html5QrCode = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess
-      ).catch(err => {
-        alert("Gagal mengakses kamera: " + err);
-      });
-    }
-
-    // Ambil Snapshot dari Video Kamera
-    function captureSnapshot() {
-      try {
-        const video = document.querySelector('#reader video');
-        if (!video) return null;
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = 300; // Resolusi kecil agar ringan
-        canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        
-        // Crop tengah video agar pas persegi
-        const size = Math.min(video.videoWidth, video.videoHeight);
-        const startX = (video.videoWidth - size) / 2;
-        const startY = (video.videoHeight - size) / 2;
-        
-        ctx.drawImage(video, startX, startY, size, size, 0, 0, 300, 300);
-        return canvas.toDataURL('image/jpeg', 0.7);
-      } catch (e) {
-        console.error("Gagal mengambil snapshot:", e);
-        return null;
-      }
-    }
-
-        // Fungsi untuk mengambil foto secara diam-diam setiap 500ms
-    function startSnapshotLoop() {
-      snapshotInterval = setInterval(() => {
-        const video = document.querySelector('#reader video');
-        if (video && video.readyState === 4) {
-          const canvas = document.createElement('canvas');
-          canvas.width = 300; 
-          canvas.height = 300;
-          const ctx = canvas.getContext('2d');
-          
-          const size = Math.min(video.videoWidth, video.videoHeight);
-          const startX = (video.videoWidth - size) / 2;
-          const startY = (video.videoHeight - size) / 2;
-          
-          ctx.drawImage(video, startX, startY, size, size, 0, 0, 300, 300);
-          latestSnapshot = canvas.toDataURL('image/jpeg', 0.7);
-        }
-      }, 500); // Ambil foto setiap 0.5 detik
-    }
-
-    async function onScanSuccess(decodedText) {
-      if (isScanning) return;
-      isScanning = true;
-
-      if (navigator.vibrate) navigator.vibrate(200);
-
-      // 1. Ambil Foto SEBELUM overlay menutupi kamera
-      const photoData = latestSnapshot;
-
-      const overlay = document.getElementById('resultOverlay');
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
-      document.getElementById('resultIcon').textContent = '⏳';
-      document.getElementById('resultName').textContent = 'Memproses...';
-      document.getElementById('resultKelas').textContent = decodedText;
-      document.getElementById('resultStatus').className = 'hidden';
-
-      // 2. Kirim ke API
-      const res = await API.post('absenGerbang', { nisn: decodedText, tipe: currentTipe });
-      
-      // 3. Tampilkan Hasil di Layar Scanner
-      if (res.success) {
-        document.getElementById('resultIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
-        document.getElementById('resultName').textContent = res.data.nama;
-        document.getElementById('resultKelas').textContent = res.data.kelas;
-        
-        const statEl = document.getElementById('resultStatus');
-        statEl.classList.remove('hidden');
-        if (res.data.status === 'tepat') {
-          statEl.textContent = `Masuk Tepat Waktu - ${res.data.jam}`;
-          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-green-500 text-white shadow-lg shadow-green-500/50';
-        } else {
-          statEl.textContent = `Terlambat - ${res.data.jam}`;
-          statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-yellow-500 text-white shadow-lg shadow-yellow-500/50';
-        }
-
-        // Tampilkan Foto ke Grid Kanan
-        if (photoData) {
-          addPhotoToWall(photoData, res.data.nama, res.data.kelas, res.data.jam, res.data.status);
-        }
-
-      } else {
-        document.getElementById('resultIcon').textContent = '❌';
-        document.getElementById('resultName').textContent = 'Gagal';
-        
-        const statEl = document.getElementById('resultStatus');
-        statEl.classList.remove('hidden');
-        statEl.textContent = res.message;
-        statEl.className = 'px-4 py-2 rounded-full font-bold text-sm bg-red-500 text-white shadow-lg shadow-red-500/50';
-      }
-
-      setTimeout(() => {
-        overlay.classList.add('hidden');
-        overlay.classList.remove('flex');
-        isScanning = false;
-      }, 3000);
-    }
-
-    // Fungsi Menambahkan Foto ke Grid Kanan
     function addPhotoToWall(photoB64, nama, kelas, jam, status) {
       const grid = document.getElementById('photoGrid');
       const empty = document.getElementById('emptyState');
       if (empty) empty.style.display = 'none';
 
-      // Buat elemen kartu foto
       const card = document.createElement('div');
       card.className = 'bg-gray-800 rounded-xl overflow-hidden shadow-lg border border-gray-700 animate-pop relative group';
-      
       const badgeColor = status === 'tepat' ? 'bg-green-500' : 'bg-yellow-500';
 
       card.innerHTML = `
@@ -314,10 +312,7 @@
         </div>
       `;
 
-      // Masukkan ke paling atas grid
       grid.prepend(card);
-      
-      // Hitung total
       const total = grid.querySelectorAll('.animate-pop').length;
       document.getElementById('totalFoto').textContent = total;
     }
@@ -325,8 +320,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('headerTanggalScan').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       initWaktu();
-      startScanner();
-
+      initCamera(); 
       startSnapshotLoop(); 
     });
   </script>
