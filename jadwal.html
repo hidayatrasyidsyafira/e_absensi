@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Jadwal — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <a href="dashboard.html" class="text-gray-500 hover:text-blue-600 font-medium">&larr; Kembali</a>
+      <span class="font-semibold text-gray-900 ml-2 border-l pl-4 border-gray-300">Jadwal Pelajaran</span>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto p-4 mt-4">
+    
+    <!-- Header & Filter -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <label class="text-sm font-semibold text-gray-700">Filter Kelas:</label>
+        <select id="filterKelas" class="px-3 py-2 border rounded-lg text-sm bg-white min-w-[150px]" onchange="renderTabel()">
+          <option value="ALL">-- Semua Kelas --</option>
+        </select>
+      </div>
+      <button onclick="bukaModalTambah()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm w-full md:w-auto">
+        + Tambah Jadwal
+      </button>
+    </div>
+
+    <!-- Tabel Jadwal -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider">
+              <th class="p-3 border-b">Hari / Jam</th>
+              <th class="p-3 border-b">Kelas</th>
+              <th class="p-3 border-b">Mata Pelajaran</th>
+              <th class="p-3 border-b">Guru Pengampu</th>
+              <th class="p-3 border-b text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelJadwal" class="text-sm divide-y divide-gray-100">
+            <!-- Render JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL FORM -->
+  <div id="modalJadwal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4" id="modalTitle">Tambah Jadwal Baru</h2>
+      <form id="formJadwal" class="space-y-4">
+        <input type="hidden" id="jadwalId" value="">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Hari</label>
+            <select id="inputHari" class="w-full px-3 py-2 border rounded-lg" required>
+              <option value="Senin">Senin</option>
+              <option value="Selasa">Selasa</option>
+              <option value="Rabu">Rabu</option>
+              <option value="Kamis">Kamis</option>
+              <option value="Jumat">Jumat</option>
+              <option value="Sabtu">Sabtu</option>
+              <option value="Minggu">Minggu</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+            <select id="inputKelas" class="w-full px-3 py-2 border rounded-lg" required>
+              <!-- Diisi JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Jam Ke-</label>
+            <input type="number" id="inputJamKe" class="w-full px-3 py-2 border rounded-lg" min="1" max="10" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mulai</label>
+            <input type="time" id="inputMulai" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Selesai</label>
+            <input type="time" id="inputSelesai" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+          <select id="inputMapel" class="w-full px-3 py-2 border rounded-lg" required>
+            <!-- Diisi JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Guru Pengampu</label>
+          <select id="inputGuru" class="w-full px-3 py-2 border rounded-lg" required>
+            <!-- Diisi JS -->
+          </select>
+        </div>
+
+        <div class="flex gap-2 justify-end pt-4 border-t mt-4">
+          <button type="button" onclick="tutupModal()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700" id="btnSimpan">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    let dataJadwal = [];
+    let formData = { mapel: [], guru: [], kelas: [] };
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const user = Auth.getUser();
+      if (!user || user.role !== 'admin') {
+        alert('Halaman ini hanya untuk Admin.');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      
+      // Load data dropdown & jadwal
+      await loadFormData();
+      await loadDataJadwal();
+    });
+
+    async function loadFormData() {
+      const res = await API.post('getJadwalFormData', { token: Auth.getToken() });
+      if (!res.success) return alert(res.message);
+      
+      formData = res.data;
+
+      // Isi Dropdown Kelas di Filter
+      const filter = document.getElementById('filterKelas');
+      formData.kelas.forEach(k => {
+        filter.innerHTML += `<option value="${k}">${k}</option>`;
+      });
+
+      // Isi Dropdown Kelas di Form
+      const inputKelas = document.getElementById('inputKelas');
+      formData.kelas.forEach(k => {
+        inputKelas.innerHTML += `<option value="${k}">${k}</option>`;
+      });
+
+      // Isi Dropdown Mapel
+      const inputMapel = document.getElementById('inputMapel');
+      formData.mapel.forEach(m => {
+        inputMapel.innerHTML += `<option value="${m.kode}">${m.kode} - ${m.nama}</option>`;
+      });
+
+      // Isi Dropdown Guru
+      const inputGuru = document.getElementById('inputGuru');
+      formData.guru.forEach(g => {
+        inputGuru.innerHTML += `<option value="${g.id}">${g.nama}</option>`;
+      });
+    }
+
+    async function loadDataJadwal() {
+      const tbody = document.getElementById('tabelJadwal');
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>';
+      
+      const res = await API.post('getAllJadwal', { token: Auth.getToken() });
+      if (!res.success) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">${res.message}</td></tr>`;
+        return;
+      }
+
+      dataJadwal = res.data;
+      renderTabel();
+    }
+
+    function renderTabel() {
+      const tbody = document.getElementById('tabelJadwal');
+      const filterKelas = document.getElementById('filterKelas').value;
+      
+      let filtered = dataJadwal;
+      if (filterKelas !== 'ALL') {
+        filtered = dataJadwal.filter(d => d.kelas === filterKelas);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Tidak ada jadwal untuk filter ini.</td></tr>';
+        return;
+      }
+
+      // Urutkan berdasarkan Hari lalu Jam Ke
+      const hariUrut = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      filtered.sort((a, b) => {
+        if (a.hari !== b.hari) return hariUrut.indexOf(a.hari) - hariUrut.indexOf(b.hari);
+        return parseInt(a.jam_ke) - parseInt(b.jam_ke);
+      });
+
+      tbody.innerHTML = filtered.map(j => `
+        <tr>
+          <td class="p-3 border-b">
+            <div class="font-bold text-gray-800">${j.hari}</div>
+            <div class="text-xs text-gray-500">Jam ke-${j.jam_ke} (${j.jam_mulai} - ${j.jam_selesai})</div>
+          </td>
+          <td class="p-3 border-b font-medium text-blue-600">${j.kelas}</td>
+          <td class="p-3 border-b">
+            <div class="font-bold text-gray-800">${j.mapel}</div>
+            <div class="text-xs text-gray-500">${j.nama_mapel}</div>
+          </td>
+          <td class="p-3 border-b text-gray-800">${j.nama_guru}</td>
+          <td class="p-3 border-b text-right space-x-1">
+            <button onclick='bukaModalEdit(${JSON.stringify(j)})' class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200">Edit</button>
+            <button onclick="hapusJadwal('${j.id}')" class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // --- MODAL LOGIC ---
+    const modal = document.getElementById('modalJadwal');
+    const form = document.getElementById('formJadwal');
+
+    function bukaModalTambah() {
+      document.getElementById('modalTitle').textContent = 'Tambah Jadwal Baru';
+      document.getElementById('jadwalId').value = '';
+      form.reset();
+      modal.classList.remove('hidden');
+    }
+
+    function bukaModalEdit(data) {
+      document.getElementById('modalTitle').textContent = 'Edit Jadwal';
+      document.getElementById('jadwalId').value = data.id;
+      
+      document.getElementById('inputHari').value = data.hari;
+      document.getElementById('inputKelas').value = data.kelas;
+      document.getElementById('inputJamKe').value = data.jam_ke;
+      document.getElementById('inputMulai').value = data.jam_mulai;
+      document.getElementById('inputSelesai').value = data.jam_selesai;
+      document.getElementById('inputMapel').value = data.mapel;
+      document.getElementById('inputGuru').value = data.guru_id;
+      
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModal() {
+      modal.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const id = document.getElementById('jadwalId').value;
+      const isEdit = id !== '';
+
+      const payload = {
+        token: Auth.getToken(),
+        id: id,
+        hari: document.getElementById('inputHari').value,
+        kelas: document.getElementById('inputKelas').value,
+        jam_ke: document.getElementById('inputJamKe').value,
+        jam_mulai: document.getElementById('inputMulai').value,
+        jam_selesai: document.getElementById('inputSelesai').value,
+        mapel: document.getElementById('inputMapel').value,
+        guru_id: document.getElementById('inputGuru').value
+      };
+
+      const action = isEdit ? 'editJadwal' : 'tambahJadwal';
+      const res = await API.post(action, payload);
+
+      if (res.success) {
+        alert(res.message);
+        tutupModal();
+        loadDataJadwal();
+      } else {
+        alert('Gagal: ' + res.message);
+      }
+      btn.disabled = false; btn.textContent = 'Simpan';
+    });
+
+    async function hapusJadwal(id) {
+      if (!confirm(`Yakin ingin menghapus jadwal ini?`)) return;
+      const res = await API.post('hapusJadwal', { token: Auth.getToken(), id });
+      
+      if (res.success) loadDataJadwal();
+      else alert(res.message);
+    }
+  </script>
+</body>
+</html>
