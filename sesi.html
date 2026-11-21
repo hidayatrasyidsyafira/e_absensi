@@ -13,12 +13,11 @@
 <body class="bg-gray-100 min-h-screen">
 
   <!-- Navbar -->
-  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-      <span class="font-semibold text-gray-900">Sesi Mapel</span>
+      <span class="font-semibold text-gray-900 text-lg">Mulai Sesi Mapel</span>
     </div>
-    <a href="home.html" class="text-gray-500 hover:text-blue-600 font-medium">&larr; Kembali</a>
+    <div class="text-sm text-gray-500 font-medium" id="headerTanggalSesi">-</div>
   </nav>
 
   <!-- Content -->
@@ -80,6 +79,7 @@
       }
 
       loadJadwal();
+      document.getElementById('headerTanggalSesi').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     });
 
     // Load Jadwal dari API
