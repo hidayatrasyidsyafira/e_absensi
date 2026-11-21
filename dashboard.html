@@ -6,513 +6,138 @@
   <title>Dashboard — Absensi QR</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen pb-10">
+<body class="bg-gray-100 h-screen overflow-hidden flex">
 
-  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="bg-white w-64 h-full border-r border-gray-200 flex flex-col transition-transform duration-300 absolute md:relative z-20 -translate-x-full md:translate-x-0 shadow-lg md:shadow-none">
+    
+    <!-- Brand -->
+    <div class="p-5 border-b border-gray-100 flex items-center gap-3">
+      <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
       </div>
-      <span class="font-semibold text-gray-900 hidden sm:block">Absensi QR</span>
-    </div>
-    <button onclick="Auth.logout()" class="text-sm text-gray-600 hover:text-red-600 font-medium">Keluar</button>
-  </nav>
-
-  <main class="max-w-3xl mx-auto p-4 mt-4">
-    
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900" id="greeting">Memuat...</h1>
-      <p class="text-gray-500 text-sm" id="roleInfo">-</p>
+      <span class="font-bold text-gray-800 text-lg">Absensi QR</span>
     </div>
 
-    <!-- MENU GURU/ADMIN -->
-    <div id="menuGuru" class="hidden mb-6">
-      <a href="sesi.html" id="btnMulaiSesi" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        Mulai Sesi Mapel (Guru)
-      </a>
-
-      <!-- TAMBAHKAN INI -->
-      <a href="siswa.html" id="menuAdminSiswa" class="hidden items-center justify-center gap-2 bg-white border-2 border-blue-600 text-blue-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        Manajemen Data Siswa (Admin)
-      </a>
-
-      <!-- Tombol Manajemen Guru/Admin -->
-      <a href="users.html" id="menuAdminGuru" class="hidden items-center justify-center gap-2 bg-white border-2 border-purple-600 text-purple-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        Manajemen Guru & Admin
-      </a>
-
-      <!-- Tombol Manajemen Mapel -->
-      <a href="mapel.html" id="menuAdminMapel" class="hidden items-center justify-center gap-2 bg-white border-2 border-green-600 text-green-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        Manajemen Mata Pelajaran
-      </a>
-
-      <!-- Tombol Manajemen Jadwal -->
-      <a href="jadwal.html" id="menuAdminJadwal" class="hidden items-center justify-center gap-2 bg-white border-2 border-yellow-500 text-yellow-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        Manajemen Jadwal Pelajaran
-      </a>
-
-      <!-- Tombol Pengaturan -->
-      <a href="settings.html" id="menuAdminSetting" class="hidden items-center justify-center gap-2 bg-white border-2 border-gray-400 text-gray-700 px-6 py-4 rounded-xl font-semibold transition-colors shadow-sm w-full mt-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        Pengaturan Sistem
-      </a>
+    <!-- User Info -->
+    <div class="p-4 border-b border-gray-100 bg-gray-50">
+      <p class="text-sm font-bold text-gray-800 truncate" id="sidebarNama">Memuat...</p>
+      <p class="text-xs text-blue-600 font-semibold uppercase tracking-wider" id="sidebarRole">-</p>
     </div>
 
-    <!-- PANEL GURU/ADMIN: PERSETUJUAN IZIN -->
-    <div id="panelPersetujuanIzin" class="hidden mb-6">
-      <h2 class="font-bold text-gray-800 mb-3">Persetujuan Izin Siswa</h2>
-      <div id="listPersetujuanIzin" class="space-y-3"></div>
+    <!-- Menu -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-1" id="menuContainer">
+      <!-- Menu akan di-render oleh JS -->
     </div>
 
-    <!-- PANEL WALI KELAS (KHUSUS GURU) -->
-    <div id="panelWaliKelas" class="hidden mb-6">
-      <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
-        <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
-          <h2 class="font-bold">Rekap Kelas Wali: <span id="infoWaliKelas">-</span></h2>
-          <span class="text-xs bg-blue-500 px-2 py-1 rounded" id="tanggalWaliKelas">-</span>
-        </div>
-        <div class="p-4">
-          <div class="grid grid-cols-4 gap-2 mb-4 text-center">
-            <div class="bg-gray-50 p-2 rounded-lg border">
-              <p class="text-[10px] text-gray-500 font-bold uppercase">Total</p>
-              <p class="text-lg font-bold text-gray-800" id="wkTotal">0</p>
-            </div>
-            <div class="bg-green-50 p-2 rounded-lg border border-green-100">
-              <p class="text-[10px] text-green-600 font-bold uppercase">Hadir</p>
-              <p class="text-lg font-bold text-green-600" id="wkHadir">0</p>
-            </div>
-            <div class="bg-yellow-50 p-2 rounded-lg border border-yellow-100">
-              <p class="text-[10px] text-yellow-600 font-bold uppercase">Izin/Sakit</p>
-              <p class="text-lg font-bold text-yellow-600" id="wkIzin">0</p>
-            </div>
-            <div class="bg-red-50 p-2 rounded-lg border border-red-100">
-              <p class="text-[10px] text-red-600 font-bold uppercase">Alpha</p>
-              <p class="text-lg font-bold text-red-600" id="wkAlpha">0</p>
-            </div>
-          </div>
-          
-          <div class="max-h-60 overflow-y-auto space-y-2 pr-1">
-            <div id="listWaliKelas" class="space-y-2"></div>
-          </div>
-        </div>
-      </div>
+    <!-- Logout -->
+    <div class="p-4 border-t border-gray-100">
+      <button onclick="Auth.logout()" class="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 rounded-lg transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Keluar
+      </button>
     </div>
-    
-    <!-- TAMPILAN ADMIN STATISTIK -->
-    <div id="panelAdmin" class="hidden">
-      <h2 class="font-bold text-gray-800 mb-3">Statistik Hari Ini</h2>
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Hadir Gerbang</p>
-          <p class="text-2xl font-bold text-green-600" id="statGerbang">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Terlambat</p>
-          <p class="text-2xl font-bold text-yellow-500" id="statTerlambat">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Scan Mapel</p>
-          <p class="text-2xl font-bold text-blue-600" id="statMapel">0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-xs text-gray-500 font-medium mb-1">Sesi Aktif</p>
-          <p class="text-2xl font-bold text-purple-600" id="statSesi">0</p>
-        </div>
-      </div>
-      <p class="text-xs text-center text-gray-400">Total Siswa Aktif: <span id="statTotalSiswa" class="font-bold">-</span></p>
+  </aside>
 
-       <div class="mt-6">
-        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-red-500"></span>
-          Belum Absen Gerbang Hari Ini
-        </h3>
-        <div id="listAlphaGerbang" class="space-y-2"></div>
-      </div>
+  <!-- MAIN CONTENT (IFRAME) -->
+  <main class="flex-1 h-full flex flex-col relative w-full">
+    <!-- Topbar Mobile -->
+    <div class="md:hidden bg-white p-3 border-b border-gray-200 flex items-center justify-between z-10">
+      <button onclick="toggleSidebar()" class="p-2 text-gray-600 bg-gray-100 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      </button>
+      <span class="font-bold text-gray-800">Absensi QR</span>
+      <div class="w-8"></div>
     </div>
 
-    <!-- TAMPILAN SISWA -->
-    <div id="panelSiswa" class="hidden">
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-4 bg-gray-200 p-1 rounded-xl">
-        <button onclick="switchTab('gerbang')" id="tabBtnGerbang" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all">Gerbang</button>
-        <button onclick="switchTab('mapel')" id="tabBtnMapel" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Mapel</button>
-        <button onclick="switchTab('izin')" id="tabBtnIzin" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all">Izin</button>
-      </div>
-
-      <!-- List Gerbang -->
-      <div id="listGerbang" class="space-y-2"></div>
-      
-      <!-- List Mapel -->
-      <div id="listMapel" class="space-y-2 hidden"></div>
-
-      <!-- List Izin -->
-      <div id="listIzin" class="space-y-2 hidden">
-        <button onclick="document.getElementById('modalIzin').classList.remove('hidden')" class="w-full bg-blue-100 text-blue-700 font-semibold py-3 rounded-xl mb-2 hover:bg-blue-200 transition-colors">
-          + Ajukan Izin / Sakit
-        </button>
-        <div id="riwayatIzinSiswa" class="space-y-2"></div>
-      </div>
-    </div>
-
+    <!-- Iframe -->
+    <iframe id="mainFrame" src="home.html" class="w-full h-full border-0 bg-gray-50"></iframe>
   </main>
 
-  <!-- MODAL FORM IZIN (Disembunyikan) -->
-  <div id="modalIzin" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md p-6">
-      <h2 class="text-xl font-bold mb-4">Formulir Pengajuan Izin</h2>
-      <form id="formIzin" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Jenis</label>
-          <select id="izinJenis" class="w-full px-3 py-2 border rounded-lg" required>
-            <option value="Sakit">Sakit</option>
-            <option value="Izin">Izin (Keperluan Keluarga/Lainnya)</option>
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Mulai</label>
-            <input type="date" id="izinMulai" class="w-full px-3 py-2 border rounded-lg" required>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Selesai</label>
-            <input type="date" id="izinSelesai" class="w-full px-3 py-2 border rounded-lg" required>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Alasan Singkat</label>
-          <textarea id="izinAlasan" rows="3" class="w-full px-3 py-2 border rounded-lg" required placeholder="Contoh: Demam tinggi, surat dokter menyusul."></textarea>
-        </div>
-        <div class="flex gap-2 justify-end pt-2">
-          <button type="button" onclick="document.getElementById('modalIzin').classList.add('hidden')" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Batal</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">Kirim</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Overlay Mobile -->
+  <div id="overlay" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden" onclick="toggleSidebar()"></div>
 
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="auth.js"></script>
   <script>
-    function formatTgl(str) {
-      if(!str || str === '-') return '-';
-      try {
-        const d = new Date(str);
-        if (isNaN(d.getTime())) return str;
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-      } catch (e) { return str; }
+    // Cek Login
+    const user = Auth.getUser();
+    if (!Auth.isLoggedIn() || !user) {
+      window.location.href = 'index.html';
     }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-      if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
-      const user = Auth.getUser();
-      if (!user) return window.location.href = 'index.html';
+    // Set Info User di Sidebar
+    document.getElementById('sidebarNama').textContent = user.nama;
+    document.getElementById('sidebarRole').textContent = user.role;
 
-      document.getElementById('greeting').textContent = `Halo, ${user.nama} 👋`;
-      document.getElementById('roleInfo').textContent = `Login sebagai ${user.role.toUpperCase()}`;
+    // Render Menu Berdasarkan Role
+    const menus = {
+      admin: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' },
+        { name: 'Scanner Gerbang', icon: '📷', url: 'scan.html' },
+        { name: 'Manajemen Siswa', icon: '🎓', url: 'siswa.html' },
+        { name: 'Guru & Admin', icon: '👨‍🏫', url: 'users.html' },
+        { name: 'Mata Pelajaran', icon: '📚', url: 'mapel.html' },
+        { name: 'Jadwal Pelajaran', icon: '📅', url: 'jadwal.html' },
+        { name: 'Pengaturan', icon: '⚙️', url: 'settings.html' }
+      ],
+      guru: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' },
+        { name: 'Mulai Sesi Mapel', icon: '📖', url: 'sesi.html' },
+        { name: 'Scanner Gerbang', icon: '📷', url: 'scan.html' }
+      ],
+      siswa: [
+        { name: 'Dashboard', icon: '🏠', url: 'home.html' }
+      ]
+    };
 
-      // --- 1. LOGIKA MENU & PANEL PER ROLE ---
-      if (user.role === 'guru' || user.role === 'admin') {
-        loadPersetujuanIzin(); // Guru & Admin bisa melihat persetujuan izin
-      }
+    const menuContainer = document.getElementById('menuContainer');
+    const listMenu = menus[user.role] || menus['siswa'];
 
-      if (user.role === 'guru') {
-        document.getElementById('menuGuru').classList.remove('hidden');
-        document.getElementById('btnMulaiSesi').classList.remove('hidden');
-        document.getElementById('menuAdminSiswa').classList.add('hidden');
-
-        // Cek apakah guru ini menjabat sebagai Wali Kelas
-        if (user.wali_kelas) {
-          loadWaliKelas(user.wali_kelas);
-        }
-      } 
+    listMenu.forEach((menu, index) => {
+      const btn = document.createElement('button');
+      btn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-gray-600 hover:bg-gray-100`;
+      btn.innerHTML = `<span class="text-lg">${menu.icon}</span> ${menu.name}`;
+      btn.onclick = () => changePage(menu.url, btn);
       
-      if (user.role === 'admin') {
-        document.getElementById('menuGuru').classList.remove('hidden'); // Munculkan wadah
-        document.getElementById('btnMulaiSesi').classList.add('hidden'); // Sembunyikan tombol sesi guru
-        document.getElementById('menuAdminSiswa').classList.remove('hidden'); // Munculkan tombol manajemen siswa
-        document.getElementById('menuAdminSiswa').classList.add('flex');
+      menuContainer.appendChild(btn);
 
-        document.getElementById('menuAdminGuru').classList.remove('hidden');
-        document.getElementById('menuAdminGuru').classList.add('flex');
-
-        document.getElementById('menuAdminMapel').classList.remove('hidden');
-        document.getElementById('menuAdminMapel').classList.add('flex');
-
-        document.getElementById('menuAdminJadwal').classList.remove('hidden');
-        document.getElementById('menuAdminJadwal').classList.add('flex');
-
-        document.getElementById('menuAdminSetting').classList.remove('hidden');
-        document.getElementById('menuAdminSetting').classList.add('flex');
-      }
-
-      // --- 2. LOAD DATA REKAP UTAMA (Statistik & Riwayat) ---
-      const res = await API.post('getRekap', { token: Auth.getToken() });
-      if (!res.success) {
-        document.getElementById('greeting').textContent = 'Gagal memuat data.';
-        document.getElementById('roleInfo').innerHTML = `<span class="text-red-500">${res.message}</span>`;
-        return;
-      }
-
-      // --- 3. RENDER BERDASARKAN ROLE ---
-      if (user.role === 'admin') {
-        document.getElementById('panelAdmin').classList.remove('hidden');
-        document.getElementById('statGerbang').textContent = res.data.hadirGerbang;
-        document.getElementById('statTerlambat').textContent = res.data.terlambatGerbang;
-        document.getElementById('statMapel').textContent = res.data.totalScanMapel;
-        document.getElementById('statSesi').textContent = res.data.sesiAktif;
-        document.getElementById('statTotalSiswa').textContent = res.data.totalSiswa;
-
-        // Render daftar siswa yang belum absen gerbang (Alpha)
-        const listAlpha = document.getElementById('listAlphaGerbang');
-        if (res.data.siswaAlphaGerbang.length === 0) {
-          listAlpha.innerHTML = '<div class="bg-green-50 text-green-700 text-sm p-3 rounded-xl border border-green-200">Luar biasa! Semua siswa sudah absen gerbang hari ini.</div>';
-        } else {
-          listAlpha.innerHTML = res.data.siswaAlphaGerbang.map(s => `
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-              <div>
-                <div class="font-bold text-gray-800 text-sm">${s.nama}</div>
-                <div class="text-xs text-gray-500">${s.kelas}</div>
-              </div>
-              <div class="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-50 px-2 py-1 rounded">Belum Masuk</div>
-            </div>
-          `).join('');
-        }
-      } 
-      
-      else if (user.role === 'siswa') {
-        document.getElementById('panelSiswa').classList.remove('hidden');
-        
-        // Render Riwayat Gerbang Siswa
-        const listG = document.getElementById('listGerbang');
-        if (res.data.gerbang.length === 0) {
-          listG.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
-        } else {
-          listG.innerHTML = res.data.gerbang.map(g => `
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-              <div>
-                <div class="font-bold text-gray-800 text-sm capitalize">Absen ${g.tipe}</div>
-                <div class="text-xs text-gray-500">${formatTgl(g.tanggal)}</div>
-              </div>
-              <div class="text-right">
-                <div class="font-mono text-sm ${g.status === 'terlambat' ? 'text-yellow-600' : 'text-green-600'}">${String(g.jam).substring(0,5)}</div>
-                <div class="text-[10px] font-bold uppercase tracking-wider ${g.status === 'terlambat' ? 'text-yellow-500' : 'text-green-500'}">${g.status}</div>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Riwayat Mapel Siswa
-        const listM = document.getElementById('listMapel');
-        if (res.data.mapel.length === 0) {
-          listM.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm bg-white rounded-xl">Belum ada riwayat.</div>';
-        } else {
-          listM.innerHTML = res.data.mapel.map(m => `
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-              <div>
-                <div class="font-bold text-gray-800 text-sm">${m.mapel}</div>
-                <div class="text-xs text-gray-500">Jam ke-${m.jam_ke} • ${m.kelas}</div>
-              </div>
-              <div class="text-right">
-                <div class="text-xs text-gray-500">${formatTgl(m.tanggal)}</div>
-                <div class="text-[10px] font-bold uppercase tracking-wider text-green-500">${m.status}</div>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Muat Data Izin Siswa
-        loadRiwayatIzinSiswa();
+      // Set active state untuk menu pertama (Dashboard)
+      if (index === 0) {
+        btn.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
       }
     });
-    // ==========================================
-    // FITUR IZIN (SISWA)
-    // ==========================================
-    async function loadRiwayatIzinSiswa() {
-      const res = await API.post('getIzin', { token: Auth.getToken() });
-      const box = document.getElementById('riwayatIzinSiswa');
-      if (!res.success) return;
-      
-      if (res.data.list.length === 0) {
-        box.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm bg-white rounded-xl">Belum ada pengajuan izin.</div>';
-        return;
-      }
 
-      box.innerHTML = res.data.list.map(i => {
-        let badgeColor = 'bg-gray-100 text-gray-600';
-        if (i.status === 'approved') badgeColor = 'bg-green-100 text-green-700';
-        if (i.status === 'rejected') badgeColor = 'bg-red-100 text-red-700';
-        
-        return `
-          <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex justify-between items-start mb-1">
-              <div class="font-bold text-gray-800 text-sm">${i.jenis}</div>
-              <span class="text-[10px] font-bold uppercase px-2 py-1 rounded ${badgeColor}">${i.status}</span>
-            </div>
-            <div class="text-xs text-gray-500">${formatTgl(i.tanggal_mulai)} s/d ${formatTgl(i.tanggal_selesai)}</div>
-            <div class="text-xs text-gray-600 mt-2 italic">"${i.alasan}"</div>
-          </div>
-        `;
-      }).join('');
+    // Fungsi Ganti Halaman
+    function changePage(url, btn) {
+      document.getElementById('mainFrame').src = url;
+      
+      // Reset semua tombol
+      const buttons = menuContainer.querySelectorAll('button');
+      buttons.forEach(b => b.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-gray-600 hover:bg-gray-100');
+      
+      // Set tombol yang diklik jadi aktif
+      btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+      btn.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
+      
+      // Tutup sidebar jika di HP
+      if (window.innerWidth < 768) {
+        toggleSidebar();
+      }
     }
 
-    document.getElementById('formIzin').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true; btn.textContent = 'Mengirim...';
-
-      const res = await API.post('ajukanIzin', {
-        token: Auth.getToken(),
-        jenis: document.getElementById('izinJenis').value,
-        tanggal_mulai: document.getElementById('izinMulai').value,
-        tanggal_selesai: document.getElementById('izinSelesai').value,
-        alasan: document.getElementById('izinAlasan').value
-      });
-
-      if (res.success) {
-        alert(res.message);
-        document.getElementById('modalIzin').classList.add('hidden');
-        e.target.reset();
-        loadRiwayatIzinSiswa();
+    // Toggle Sidebar Mobile
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
       } else {
-        alert(res.message);
-      }
-      btn.disabled = false; btn.textContent = 'Kirim';
-    });
-
-    // ==========================================
-    // FITUR PERSETUJUAN IZIN (GURU/ADMIN)
-    // ==========================================
-        async function loadPersetujuanIzin() {
-      const res = await API.post('getIzin', { token: Auth.getToken() });
-      const box = document.getElementById('listPersetujuanIzin');
-      const panel = document.getElementById('panelPersetujuanIzin');
-      
-      // Tampilkan panelnya terlebih dahulu
-      panel.classList.remove('hidden');
-
-      if (!res.success) {
-        box.innerHTML = `<div class="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl border border-red-200">Gagal memuat: ${res.message}</div>`;
-        return;
-      }
-
-      // Jika tidak ada data
-      if (res.data.list.length === 0) {
-        box.innerHTML = '<div class="text-center py-4 text-gray-500 text-sm bg-white rounded-xl border border-gray-100">Tidak ada pengajuan izin yang menunggu persetujuan.</div>';
-        return;
-      }
-
-      // Render List
-      box.innerHTML = res.data.list.map(i => `
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <div class="font-bold text-gray-800 text-sm">${i.nama_siswa}</div>
-              <div class="text-xs text-blue-600 font-medium">${i.jenis}</div>
-            </div>
-            <div class="text-xs text-gray-500 text-right">${formatTgl(i.tanggal_mulai)}<br>s/d ${formatTgl(i.tanggal_selesai)}</div>
-          </div>
-          <p class="text-xs text-gray-600 italic mb-3">"${i.alasan}"</p>
-          <div class="flex gap-2">
-            <button onclick="updateIzin('${i.id}', 'rejected')" class="flex-1 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200">Tolak</button>
-            <button onclick="updateIzin('${i.id}', 'approved')" class="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">Setujui</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function updateIzin(id, status) {
-      if (!confirm(`Yakin ingin menandai izin ini sebagai ${status}?`)) return;
-      const res = await API.post('updateStatusIzin', { token: Auth.getToken(), id, status });
-      if (res.success) {
-        loadPersetujuanIzin(); // Refresh list
-      } else {
-        alert(res.message);
-      }
-    }
-
-    // ==========================================
-    // FITUR WALI KELAS
-    // ==========================================
-        async function loadWaliKelas(kelas) {
-      const panel = document.getElementById('panelWaliKelas');
-      panel.classList.remove('hidden');
-      document.getElementById('infoWaliKelas').textContent = kelas;
-      
-      const today = new Date();
-      const options = { day: 'numeric', month: 'short', year: 'numeric' };
-      document.getElementById('tanggalWaliKelas').textContent = today.toLocaleDateString('id-ID', options);
-
-      // Tampilkan loading
-      document.getElementById('listWaliKelas').innerHTML = '<div class="text-center text-sm text-gray-400 py-4">Memuat data...</div>';
-
-      const res = await API.post('getRekapWaliKelas', { token: Auth.getToken(), kelas });
-      
-      // --- TAMPILKAN ERROR JIKA ADA ---
-      if (!res.success) {
-        document.getElementById('listWaliKelas').innerHTML = `<div class="text-red-500 text-sm bg-red-50 p-3 rounded-lg text-center">Gagal memuat: ${res.message}</div>`;
-        return;
-      }
-      // --------------------------------
-
-      const d = res.data;
-      document.getElementById('wkTotal').textContent = d.total;
-      document.getElementById('wkHadir').textContent = d.hadir;
-      document.getElementById('wkIzin').textContent = d.izinSakit;
-      document.getElementById('wkAlpha').textContent = d.alpha;
-
-      const list = document.getElementById('listWaliKelas');
-      if (d.detail.length === 0) {
-        list.innerHTML = '<div class="text-center text-sm text-gray-400 py-4">Belum ada data siswa.</div>';
-        return;
-      }
-
-      list.innerHTML = d.detail.map(s => {
-        let badgeColor = 'bg-gray-100 text-gray-600';
-        if (s.status === 'hadir') badgeColor = 'bg-green-100 text-green-700';
-        if (s.status === 'sakit' || s.status === 'izin') badgeColor = 'bg-yellow-100 text-yellow-700';
-        if (s.status === 'alpha') badgeColor = 'bg-red-100 text-red-700';
-
-        return `
-          <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
-            <div>
-              <div class="text-sm font-semibold text-gray-800">${s.nama}</div>
-              <div class="text-[10px] text-gray-500">NISN: ${s.nisn}</div>
-            </div>
-            <span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${badgeColor}">${s.status}</span>
-          </div>
-        `;
-      }).join('');
-    }
-    
-    // Logic Tab Siswa
-    function switchTab(tab) {
-      const btnG = document.getElementById('tabBtnGerbang');
-      const btnM = document.getElementById('tabBtnMapel');
-      const btnI = document.getElementById('tabBtnIzin');
-      const listG = document.getElementById('listGerbang');
-      const listM = document.getElementById('listMapel');
-      const listI = document.getElementById('listIzin');
-
-      // Reset classes
-      [btnG, btnM, btnI].forEach(b => b.className = 'flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-800 transition-all');
-      [listG, listM, listI].forEach(l => l.classList.add('hidden'));
-
-      // Set active
-      if (tab === 'gerbang') {
-        btnG.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
-        listG.classList.remove('hidden');
-      } else if (tab === 'mapel') {
-        btnM.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
-        listM.classList.remove('hidden');
-      } else if (tab === 'izin') {
-        btnI.className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow text-blue-600 transition-all';
-        listI.classList.remove('hidden');
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
       }
     }
   </script>
