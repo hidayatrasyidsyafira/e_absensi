@@ -47,8 +47,13 @@ const Auth = {
     return true;
   },
 
-  logout() {
+    logout() {
     this.clearSession();
-    window.location.href = 'index.html';
+    // Jika di dalam iframe, arahkan jendela utama (top) ke index.html
+    if (window.top !== window.self) {
+      window.top.location.href = 'index.html';
+    } else {
+      window.location.href = 'index.html';
+    }
   }
 };
