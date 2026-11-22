@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sesi Mapel — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    #reader video { border-radius: 1rem; object-fit: cover; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <span class="font-semibold text-gray-900 text-lg">Mulai Sesi Mapel</span>
+    </div>
+    <div class="text-sm text-gray-500 font-medium" id="headerTanggalSesi">-</div>
+  </nav>
+
+  <!-- Content -->
+  <main class="max-w-md mx-auto p-4">
+    
+    <!-- TAMPILAN 1: Pilih Jadwal -->
+    <div id="panelJadwal">
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <h2 class="font-semibold text-gray-800 mb-1">Jadwal Mengajar Hari Ini</h2>
+        <p class="text-sm text-gray-500" id="infoHari">Memuat...</p>
+      </div>
+      <div id="listJadwal" class="space-y-3">
+        <!-- Card Jadwal akan dirender oleh JS -->
+      </div>
+    </div>
+
+    <!-- TAMPILAN 2: Scanner Sesi Aktif -->
+    <div id="panelScanner" class="hidden">
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-4 text-center">
+        <h2 class="font-bold text-xl text-gray-800" id="infoMapel">-</h2>
+        <p class="text-sm text-gray-500" id="infoKelas">-</p>
+        <div class="mt-4 inline-block bg-green-100 text-green-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          Sesi Terbuka
+        </div>
+      </div>
+
+      <div class="bg-black rounded-xl overflow-hidden shadow-lg aspect-square relative mb-4" id="cameraContainer">
+        <div id="reader" class="w-full"></div>
+        <div id="resultOverlay" class="absolute inset-0 bg-black/90 z-10 hidden flex-col items-center justify-center text-center p-4 transition-all duration-300">
+          <div id="resIcon" class="text-6xl mb-2">⏳</div>
+          <h3 id="resName" class="text-2xl font-bold text-white mb-1">Memproses...</h3>
+          <p id="resMsg" class="text-gray-300"></p>
+        </div>
+      </div>
+
+      <button onclick="tutupSesi()" class="w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-3 rounded-xl transition-colors">
+        Tutup Sesi
+      </button>
+    </div>
+
+  </main>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    let currentSesiId = null;
+    let html5QrCode = null;
+    let isScanning = false;
+
+    // Cek Auth saat halaman dibuka
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
+      
+      const user = Auth.getUser();
+      if (user.role !== 'guru' && user.role !== 'admin') {
+        alert('Halaman ini hanya untuk Guru.');
+        return window.location.href = 'dashboard.html';
+      }
+
+      loadJadwal();
+      document.getElementById('headerTanggalSesi').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    });
+
+    // Load Jadwal dari API
+    async function loadJadwal() {
+      const res = await API.post('getJadwalGuru', { token: Auth.getToken() });
+      const listDiv = document.getElementById('listJadwal');
+      
+      if (!res.success) {
+        listDiv.innerHTML = `<div class="text-red-500 text-center py-4">${res.message}</div>`;
+        return;
+      }
+
+      document.getElementById('infoHari').textContent = `Hari ${res.data.hari}`;
+
+      if (res.data.jadwal.length === 0) {
+        listDiv.innerHTML = `<div class="text-center py-8 text-gray-500 bg-white rounded-xl">Tidak ada jadwal mengajar hari ini.</div>`;
+        return;
+      }
+
+      // Render kartu jadwal
+      listDiv.innerHTML = res.data.jadwal.map(j => `
+        <div class="bg-white rounded-xl shadow-sm p-4 flex justify-between items-center">
+          <div>
+            <div class="font-bold text-gray-800">${j.mapel}</div>
+            <div class="text-sm text-gray-500">Kelas ${j.kelas} • Jam ke-${j.jam_ke}</div>
+            <div class="text-xs text-gray-400 mt-1">${j.jam_mulai} - ${j.jam_selesai}</div>
+          </div>
+          <button onclick="bukaSesi('${j.id}', '${j.kelas}', '${j.jam_ke}', '${j.mapel}')" 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+            Buka Sesi
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Aksi Buka Sesi
+    async function bukaSesi(jadwal_id, kelas, jam_ke, mapel) {
+      if (!confirm(`Buka sesi untuk mapel ${mapel} kelas ${kelas}?`)) return;
+
+      const res = await API.post('bukaSesi', {
+        token: Auth.getToken(),
+        jadwal_id, kelas, jam_ke, mapel
+      });
+
+      if (res.success) {
+        currentSesiId = res.data.sesi_id;
+        showScannerUI(mapel, kelas);
+      } else {
+        alert('Gagal buka sesi: ' + res.message);
+      }
+    }
+
+    // Tampilkan UI Scanner
+    function showScannerUI(mapel, kelas) {
+      document.getElementById('panelJadwal').classList.add('hidden');
+      document.getElementById('panelScanner').classList.remove('hidden');
+      
+      document.getElementById('infoMapel').textContent = mapel;
+      document.getElementById('infoKelas').textContent = `Kelas ${kelas}`;
+
+      // Jalankan Kamera
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess
+      ).catch(err => alert("Gagal akses kamera: " + err));
+    }
+
+    // Callback saat QR terbaca
+    async function onScanSuccess(decodedText) {
+      if (isScanning) return;
+      isScanning = true;
+
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      const overlay = document.getElementById('resultOverlay');
+      const resName = document.getElementById('resName');
+      const resMsg = document.getElementById('resMsg');
+      const resIcon = document.getElementById('resIcon');
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      resIcon.textContent = '⏳';
+      resName.textContent = 'Memproses...';
+      resMsg.textContent = decodedText;
+
+      const res = await API.post('absenMapel', { nisn: decodedText, sesi_id: currentSesiId });
+
+      if (res.success) {
+        // Tampilkan Centang Hijau atau Kuning
+        document.getElementById('resIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
+        document.getElementById('resName').textContent = res.data.nama;
+        
+        // Tampilkan pesan dengan status
+        const statusColor = res.data.status === 'terlambat' ? 'text-yellow-400' : 'text-green-400';
+        document.getElementById('resMsg').innerHTML = `
+          <span class="${statusColor} font-bold uppercase">${res.data.status}</span> - ${res.data.jam} `;
+      } else {
+        resIcon.textContent = '❌';
+        resName.textContent = 'Gagal';
+        resMsg.innerHTML = `<span class="text-red-400">${res.message}</span>`;
+      }
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        isScanning = false;
+      }, 2500);
+    }
+
+    // Aksi Tutup Sesi
+    async function tutupSesi() {
+      if (!confirm('Yakin ingin menutup sesi ini?')) return;
+
+      const res = await API.post('tutupSesi', { token: Auth.getToken(), sesi_id: currentSesiId });
+
+      if (res.success) {
+        // Stop kamera
+        if (html5QrCode) await html5QrCode.stop();
+        alert('Sesi ditutup.');
+        window.location.reload(); // Reload untuk kembali ke menu jadwal
+      } else {
+        alert('Gagal tutup sesi: ' + res.message);
+      }
+    }
+    
+  </script>
+</body>
+</html>
