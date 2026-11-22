@@ -116,20 +116,23 @@
 
     // Fungsi Ganti Halaman
     function changePage(url, btn) {
+      const currentSrc = document.getElementById('mainFrame').src;
+      
+      // Jika sedang di sesi.html dan mau pindah, beri peringatan
+      if (currentSrc.includes('sesi.html') && !url.includes('sesi.html')) {
+        const ok = confirm('Anda sedang membuka sesi mengajar. Jika Anda pindah, sesi tetap AKTIF di server dan akan tertutup otomatis saat jam pelajaran berakhir. Yakin ingin pindah?');
+        if (!ok) return;
+      }
+
       document.getElementById('mainFrame').src = url;
       
-      // Reset semua tombol
       const buttons = menuContainer.querySelectorAll('button');
       buttons.forEach(b => b.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium text-gray-600 hover:bg-gray-100');
       
-      // Set tombol yang diklik jadi aktif
       btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
       btn.classList.add('bg-blue-50', 'text-blue-600', 'font-bold');
       
-      // Tutup sidebar jika di HP
-      if (window.innerWidth < 768) {
-        toggleSidebar();
-      }
+      if (window.innerWidth < 768) toggleSidebar();
     }
 
     // Toggle Sidebar Mobile
