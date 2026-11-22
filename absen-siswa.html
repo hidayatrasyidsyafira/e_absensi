@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absen Mandiri — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    #reader video { border-radius: 1rem; object-fit: cover; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-white mb-2">Absen Mandiri</h1>
+      <p class="text-sm text-gray-400">Scan QR Code yang ada di Gerbang/Pintu Kelas</p>
+    </div>
+
+    <!-- Area Kamera -->
+    <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl aspect-square border-4 border-gray-700" id="cameraContainer">
+      <div id="reader" class="w-full h-full"></div>
+      
+      <!-- Overlay Hasil -->
+      <div id="resultOverlay" class="absolute inset-0 bg-black/90 backdrop-blur-sm z-10 hidden flex-col items-center justify-center text-center p-4">
+        <div id="resultIcon" class="text-7xl mb-4">⏳</div>
+        <h2 id="resultTitle" class="text-2xl font-bold mb-2">Memproses...</h2>
+        <p id="resultMsg" class="text-gray-300"></p>
+      </div>
+    </div>
+
+    <div id="statusGps" class="mt-6 text-center bg-gray-800 py-3 rounded-xl border border-gray-700">
+      <p class="text-sm text-gray-400">Mencari sinyal GPS...</p>
+    </div>
+
+    <a href="dashboard.html" class="block text-center mt-6 text-sm text-gray-500 hover:text-white underline">Kembali ke Dashboard</a>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    let isScanning = false;
+    let html5QrCode;
+    let currentLat = null;
+    let currentLng = null;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
+      
+      // 1. Ambil Lokasi GPS
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+          (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            document.getElementById('statusGps').innerHTML = `<p class="text-xs text-green-400 font-bold">📍 GPS Terdeteksi (Akurasi: ${Math.round(pos.coords.accuracy)}m)</p>`;
+          },
+          (err) => {
+            document.getElementById('statusGps').innerHTML = `<p class="text-xs text-red-400 font-bold">⚠️ Gagal ambil GPS. Pastikan izin lokasi menyala.</p>`;
+          },
+          { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+        );
+      }
+
+      // 2. Jalankan Kamera Scanner
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, // Kamera belakang
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess
+      ).catch(err => alert("Gagal akses kamera: " + err));
+    });
+
+    async function onScanSuccess(decodedText) {
+      if (isScanning) return;
+      if (!currentLat || !currentLng) {
+        alert("Tunggu beberapa detik, GPS sedang mencari sinyal.");
+        return;
+      }
+
+      isScanning = true;
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      const overlay = document.getElementById('resultOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      document.getElementById('resultIcon').textContent = '⏳';
+      document.getElementById('resultTitle').textContent = 'Memproses...';
+      document.getElementById('resultMsg').textContent = decodedText;
+
+      // Kirim ke Backend
+      const res = await API.post('absenMandiri', {
+        token: Auth.getToken(),
+        kode_lokasi: decodedText,
+        lat: currentLat,
+        lng: currentLng
+      });
+
+      if (res.success) {
+        document.getElementById('resultIcon').textContent = res.data.status === 'terlambat' ? '⚠️' : '✅';
+        document.getElementById('resultTitle').textContent = `Absen ${res.data.tipe.toUpperCase()} Berhasil`;
+        document.getElementById('resultMsg').innerHTML = `Jam: <b>${res.data.jam}</b><br>Status: <b class="uppercase ${res.data.status === 'terlambat' ? 'text-yellow-400' : 'text-green-400'}">${res.data.status}</b>`;
+      } else {
+        document.getElementById('resultIcon').textContent = '❌';
+        document.getElementById('resultTitle').textContent = 'Gagal';
+        document.getElementById('resultMsg').innerHTML = `<span class="text-red-400">${res.message}</span>`;
+      }
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        isScanning = false;
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
