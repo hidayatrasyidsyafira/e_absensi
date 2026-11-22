@@ -114,28 +114,34 @@
     //     isScanning = false;
     //   }, 3000);
     // }
-    async function onScanSuccess(decodedText) {
+        async function onScanSuccess(decodedText) {
+      // 1. KUNCI SCANNER DULU DI DETIK PERTAMA
       if (isScanning) return;
+      isScanning = true;
 
-      // --- 1. CEK STATUS GPS SECARA REAL-TIME ---
-      // Jika GPS mati, API browser akan error atau mengembalikan koordinat kosong
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      const overlay = document.getElementById('resultOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      document.getElementById('resultIcon').textContent = '📍';
+      document.getElementById('resultTitle').textContent = 'Mengecek GPS...';
+      document.getElementById('resultMsg').innerHTML = '<span class="text-gray-400">Mohon tunggu sebentar.</span>';
+
+      // 2. CEK STATUS GPS SECARA REAL-TIME
       try {
         const pos = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, { 
             enableHighAccuracy: true, 
-            timeout: 3000, // Tunggu maksimal 3 detik
-            maximumAge: 0  // Jangan pakai cache, ambil lokasi baru
+            timeout: 3000, 
+            maximumAge: 0  
           });
         });
         
-        // Update koordinat terbaru
         currentLat = pos.coords.latitude;
         currentLng = pos.coords.longitude;
       } catch (err) {
-        // Jika error (GPS mati / tidak diizinkan), tampilkan overlay error dan batalkan scan
-        const overlay = document.getElementById('resultOverlay');
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
+        // Jika GPS mati
         document.getElementById('resultIcon').textContent = '📍';
         document.getElementById('resultTitle').textContent = 'GPS Tidak Aktif';
         document.getElementById('resultMsg').innerHTML = '<span class="text-red-400">Nyalakan GPS/Lokasi HP Anda untuk melakukan absensi.</span>';
@@ -143,22 +149,16 @@
         setTimeout(() => {
           overlay.classList.add('hidden');
           overlay.classList.remove('flex');
+          isScanning = false; // Buka kunci scanner
         }, 3000);
-        return; // Hentikan proses, jangan kirim ke server
+        return; 
       }
-      // -----------------------------------------
 
-      isScanning = true;
-      if (navigator.vibrate) navigator.vibrate(200);
-
-      const overlay = document.getElementById('resultOverlay');
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
+      // 3. JIKA GPS OK, LANJUT PROSES KE SERVER
       document.getElementById('resultIcon').textContent = '⏳';
       document.getElementById('resultTitle').textContent = 'Memproses...';
       document.getElementById('resultMsg').textContent = decodedText;
 
-      // Kirim ke Backend
       const res = await API.post('absenMandiri', {
         token: Auth.getToken(),
         kode_lokasi: decodedText,
@@ -176,6 +176,7 @@
         document.getElementById('resultMsg').innerHTML = `<span class="text-red-400">${res.message}</span>`;
       }
 
+      // 4. BUKA KUNCI SCANNER SETELAH 3 DETIK
       setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.classList.remove('flex');
