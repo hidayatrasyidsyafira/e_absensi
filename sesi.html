@@ -69,7 +69,7 @@
     let isScanning = false;
 
     // Cek Auth saat halaman dibuka
-        window.addEventListener('DOMContentLoaded', async () => {
+            window.addEventListener('DOMContentLoaded', async () => {
       if (!Auth.isLoggedIn()) return window.location.href = 'index.html';
       
       const user = Auth.getUser();
@@ -78,32 +78,36 @@
         return window.location.href = 'dashboard.html';
       }
 
-      // Tampilkan tanggal header
       const today = new Date();
       document.getElementById('headerTanggalSesi').textContent = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-      // --- CEK APAKAH ADA SESI YANG MASIH TERBUKA ---
+      console.log("=== CEK SESI AKTIF ===");
+      
       try {
         const resCek = await API.post('getSesiAktif', { token: Auth.getToken() });
-        
+        console.log("Respons API getSesiAktif:", resCek);
+
         if (resCek.success && resCek.data.aktif) {
-          // Ada sesi aktif, langsung buka scanner!
+          console.log("Sesi ditemukan, membuka scanner...");
           currentSesiId = resCek.data.sesi.sesi_id;
           const mapelAktif = resCek.data.sesi.mapel;
           const kelasAktif = resCek.data.sesi.kelas;
           
           showScannerUI(mapelAktif, kelasAktif);
           
-          // Tampilkan notifikasi kecil bahwa ini lanjutan
-          alert(`Melanjutkan sesi ${mapelAktif} kelas ${kelasAktif} yang masih terbuka.`);
-          return; // Hentikan proses, jangan load jadwal
+          // Tampilkan pesan setelah scanner muncul
+          setTimeout(() => {
+            alert(`Melanjutkan sesi ${mapelAktif} kelas ${kelasAktif} yang masih terbuka.`);
+          }, 500);
+          
+          return;
+        } else {
+          console.log("Tidak ada sesi aktif, memuat jadwal.");
         }
       } catch (e) {
         console.error('Gagal cek sesi aktif:', e);
       }
-      // ------------------------------------------------
 
-      // Jika tidak ada sesi aktif, tampilkan jadwal seperti biasa
       loadJadwal();
     });
 
