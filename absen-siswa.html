@@ -20,7 +20,18 @@
 
     <!-- Area Kamera -->
     <div class="relative bg-black rounded-2xl overflow-hidden shadow-2xl aspect-square border-4 border-gray-700" id="cameraContainer">
-      <div id="reader" class="w-full h-full"></div>
+         <div id="reader" class="w-full h-full relative">
+         <!-- Bingkai Kustom -->
+         <div class="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+            <div class="w-[250px] h-[300px] relative">
+               <!-- 4 Sudut -->
+               <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
+               <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
+               <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
+               <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+            </div>
+         </div>
+      </div>
       
       <!-- Overlay Hasil -->
       <div id="resultOverlay" class="absolute inset-0 bg-black/90 backdrop-blur-sm z-10 hidden flex-col items-center justify-center text-center p-4">
@@ -68,7 +79,7 @@
       html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
         { facingMode: "environment" }, // Kamera belakang
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 10, qrbox: { width: 250, height: 300 } },
         onScanSuccess
       ).catch(err => alert("Gagal akses kamera: " + err));
     });
