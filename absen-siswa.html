@@ -79,7 +79,7 @@
       html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
         { facingMode: "environment" }, // Kamera belakang
-        { fps: 10, qrbox: { width: 250, height: 300 } },
+        { fps: 10, qrbox: { width: 250, height: 330 } },
         onScanSuccess
       ).catch(err => alert("Gagal akses kamera: " + err));
     });
