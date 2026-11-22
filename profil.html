@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil & Password — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-6 pb-20">
+
+  <div class="max-w-md mx-auto mt-4">
+    <!-- Info User -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 text-center">
+      <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold uppercase" id="avatarInisial">?</div>
+      <h1 class="text-xl font-bold text-gray-800" id="profileNama">Memuat...</h1>
+      <p class="text-sm text-gray-500 mb-2" id="profileId">-</p>
+      <span class="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" id="profileRole">-</span>
+    </div>
+
+    <!-- Form Ganti Password -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+        Ganti Password
+      </h2>
+      
+      <form id="formPassword" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password Lama</label>
+          <input type="password" id="oldPassword" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Masukkan password saat ini">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+          <input type="password" id="newPassword" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required minlength="6" placeholder="Minimal 6 karakter">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password Baru</label>
+          <input type="password" id="confirmPassword" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required minlength="6" placeholder="Ketik ulang password baru">
+        </div>
+
+        <div id="errorMsg" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg"></div>
+
+        <button type="submit" id="btnSimpan" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-sm mt-2">
+          Simpan Password Baru
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const user = Auth.getUser();
+      if (!user) return;
+
+      // Tampilkan Info User
+      document.getElementById('profileNama').textContent = user.nama;
+      document.getElementById('profileId').textContent = `ID: ${user.id}`;
+      document.getElementById('profileRole').textContent = user.role;
+      
+      // Ambil huruf pertama untuk avatar
+      const inisial = user.nama.charAt(0).toUpperCase();
+      document.getElementById('avatarInisial').textContent = inisial;
+    });
+
+    document.getElementById('formPassword').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSimpan');
+      const errBox = document.getElementById('errorMsg');
+      
+      const oldPwd = document.getElementById('oldPassword').value;
+      const newPwd = document.getElementById('newPassword').value;
+      const confirmPwd = document.getElementById('confirmPassword').value;
+
+      errBox.classList.add('hidden');
+
+      if (newPwd !== confirmPwd) {
+        errBox.textContent = 'Password baru dan konfirmasi tidak cocok!';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const res = await API.post('changePassword', { 
+        token: Auth.getToken(), 
+        old_password: oldPwd, 
+        new_password: newPwd 
+      });
+
+      if (res.success) {
+        alert('Password berhasil diubah! Silakan login ulang untuk keamanan.');
+        Auth.logout(); // Paksa login ulang
+      } else {
+        errBox.textContent = res.message;
+        errBox.classList.remove('hidden');
+        btn.disabled = false; btn.textContent = 'Simpan Password Baru';
+      }
+    });
+  </script>
+</body>
+</html>
