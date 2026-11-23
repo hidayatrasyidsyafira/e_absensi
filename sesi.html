@@ -112,7 +112,7 @@
     });
 
     // Load Jadwal dari API
-    async function loadJadwal() {
+        async function loadJadwal() {
       const res = await API.post('getJadwalGuru', { token: Auth.getToken() });
       const listDiv = document.getElementById('listJadwal');
       
@@ -128,20 +128,52 @@
         return;
       }
 
-      // Render kartu jadwal
-      listDiv.innerHTML = res.data.jadwal.map(j => `
+      // Cek apakah ada sesi yang sedang terbuka
+      const resCek = await API.post('getSesiAktif', { token: Auth.getToken() });
+      const adaSesiTerbuka = resCek.success && resCek.data.aktif;
+
+      // Waktu sekarang
+      const now = new Date();
+      const currentMenit = (now.getHours() * 60) + now.getMinutes();
+
+      listDiv.innerHTML = res.data.jadwal.map(j => {
+        const [hM, mM] = j.jam_mulai.split(':').map(Number);
+        const [hS, mS] = j.jam_selesai.split(':').map(Number);
+        
+        const totalMenitMulai = (hM * 60) + mM;
+        const totalMenitSelesai = (hS * 60) + mS;
+
+        let btnHtml = '';
+        let statusLabel = '';
+
+        if (currentMenit < totalMenitMulai) {
+          btnHtml = `<button disabled class="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed">Belum Waktunya</button>`;
+          statusLabel = `<div class="text-xs text-gray-400 mt-1">Tunggu hingga jam ${j.jam_mulai}</div>`;
+        } else if (currentMenit > totalMenitSelesai) {
+          btnHtml = `<button disabled class="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed">Selesai</button>`;
+          statusLabel = `<div class="text-xs text-gray-400 mt-1">Waktu sudah terlewat.</div>`;
+        } else if (adaSesiTerbuka) {
+          btnHtml = `<button disabled class="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed">Terkunci</button>`;
+          statusLabel = `<div class="text-xs text-red-500 font-bold mt-1">Tutup sesi lain terlebih dahulu.</div>`;
+        } else {
+          btnHtml = `<button onclick="bukaSesi('${j.id}', '${j.kelas}', '${j.jam_ke}', '${j.mapel}')" 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+            Buka Sesi
+          </button>`;
+          statusLabel = `<div class="text-xs text-green-600 font-bold mt-1">✓ Waktunya Buka Sesi</div>`;
+        }
+
+        return `
         <div class="bg-white rounded-xl shadow-sm p-4 flex justify-between items-center">
           <div>
             <div class="font-bold text-gray-800">${j.mapel}</div>
             <div class="text-sm text-gray-500">Kelas ${j.kelas} • Jam ke-${j.jam_ke}</div>
             <div class="text-xs text-gray-400 mt-1">${j.jam_mulai} - ${j.jam_selesai}</div>
+            ${statusLabel}
           </div>
-          <button onclick="bukaSesi('${j.id}', '${j.kelas}', '${j.jam_ke}', '${j.mapel}')" 
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-            Buka Sesi
-          </button>
+          ${btnHtml}
         </div>
-      `).join('');
+      `}).join('');
     }
 
     // Aksi Buka Sesi
