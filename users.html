@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Guru & Admin — Absensi QR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+  <nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <span class="font-semibold text-gray-900 text-lg">Manajemen Guru & Admin</span>
+    </div>
+    <div class="text-sm text-gray-500 font-medium" id="headerTanggalUsers">-</div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto p-4 mt-4">
+    
+    <!-- Header & Buttons -->
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-xl font-bold text-gray-800">Daftar Guru & Admin</h1>
+      <div class="flex gap-2">
+        <button onclick="bukaModalImport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm">
+          Import CSV
+        </button>
+        <button onclick="bukaModalTambah()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm">
+          + Tambah User
+        </button>
+      </div>
+    </div>
+
+    <!-- Kontrol Pencarian & Limit -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
+      <div class="relative w-full md:w-1/2">
+        <input type="text" id="searchUser" oninput="renderTabel()" placeholder="Cari Nama, NIP, atau Email..." 
+          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <span>Tampilkan:</span>
+        <select id="limitUser" onchange="currentPage = 1; renderTabel();" class="border border-gray-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+        <span>data</span>
+      </div>
+    </div>
+
+    <!-- Tabel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider">
+              <th class="p-3 border-b">Nama / ID</th>
+              <th class="p-3 border-b">NIP / Email</th>
+              <th class="p-3 border-b">Role</th>
+              <th class="p-3 border-b">Wali Kelas</th>
+              <th class="p-3 border-b">Status</th>
+              <th class="p-3 border-b text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelUser" class="text-sm divide-y divide-gray-100">
+            <tr><td colspan="6" class="text-center p-4 text-gray-500">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="pagination" class="p-4 border-t border-gray-200 flex justify-between items-center text-sm bg-gray-50"></div>
+    </div>
+
+  </main>
+
+  <!-- MODAL FORM USER -->
+  <div id="modalUser" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4" id="modalTitle">Tambah User Baru</h2>
+      <form id="formUser" class="space-y-4">
+        <input type="hidden" id="userId" value="">
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+          <input type="text" id="inputNama" class="w-full px-3 py-2 border rounded-lg" required>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">NIP / NIS</label>
+            <input type="text" id="inputNip" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" id="inputEmail" class="w-full px-3 py-2 border rounded-lg" required>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select id="inputRole" class="w-full px-3 py-2 border rounded-lg" required onchange="toggleWaliKelas()">
+              <option value="guru">Guru</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div id="formWaliKelas">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Wali Kelas (Opsional)</label>
+            <input type="text" id="inputWaliKelas" class="w-full px-3 py-2 border rounded-lg" placeholder="Contoh: X-IPA-1">
+          </div>
+        </div>
+
+        <div class="flex gap-2 justify-end pt-4 border-t mt-4">
+          <button type="button" onclick="tutupModal()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700" id="btnSimpan">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL IMPORT CSV -->
+  <div id="modalImport" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+      <h2 class="text-xl font-bold mb-2">Import Data Guru/Admin</h2>
+      <p class="text-sm text-gray-500 mb-4">Unggah file CSV dengan format kolom: <br><code>nama, nis_nip, email, role, wali_kelas</code></p>
+      
+      <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800 mb-4">
+        <b>Penting:</b> Simpan file sebagai <b>.csv</b> (Comma delimited). Baris pertama (header) diabaikan.
+        <br><a href="#" onclick="downloadTemplate()" class="text-blue-600 underline">Download Template CSV</a>
+      </div>
+
+      <form id="formImport" class="space-y-4">
+        <input type="file" id="fileCsv" accept=".csv" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        
+        <div class="flex gap-2 justify-end pt-4 border-t mt-4">
+          <button type="button" onclick="document.getElementById('modalImport').classList.add('hidden')" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Batal</button>
+          <button type="submit" id="btnImport" class="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700">Mulai Import</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    let allUsersData = [];
+    let currentPage = 1;
+
+    document.getElementById('headerTanggalUsers').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const user = Auth.getUser();
+      if (!user || user.role !== 'admin') {
+        Swal.fire('Akses Ditolak', 'Halaman ini hanya untuk Admin.', 'error').then(() => {
+          window.location.href = 'dashboard.html';
+        });
+        return;
+      }
+      loadDataUser();
+    });
+
+    async function loadDataUser() {
+      const tbody = document.getElementById('tabelUser');
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">Memuat data...</td></tr>';
+      
+      try {
+        const res = await API.post('getAllUsers', { token: Auth.getToken() });
+        if (!res.success) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-500 font-bold">${res.message}</td></tr>`;
+          return;
+        }
+        allUsersData = Array.isArray(res.data) ? res.data : [];
+        renderTabel();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-500">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderTabel() {
+      const tbody = document.getElementById('tabelUser');
+      const searchQuery = document.getElementById('searchUser').value.toLowerCase();
+      const limit = parseInt(document.getElementById('limitUser').value);
+
+      try {
+        const filteredData = allUsersData.filter(u => 
+          String(u.nama || '').toLowerCase().includes(searchQuery) ||
+          String(u.nis_nip || '').toLowerCase().includes(searchQuery) ||
+          String(u.email || '').toLowerCase().includes(searchQuery)
+        );
+
+        const totalPages = Math.ceil(filteredData.length / limit) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const startIndex = (currentPage - 1) * limit;
+        const paginatedData = filteredData.slice(startIndex, startIndex + limit);
+
+        if (paginatedData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center p-6 text-gray-500">Data tidak ditemukan.</td></tr>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        tbody.innerHTML = paginatedData.map(u => {
+          const isAktif = u.status === 'aktif';
+          const roleColor = u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+          const safeData = encodeURIComponent(JSON.stringify(u));
+          
+          return `
+          <tr class="${isAktif ? '' : 'bg-gray-50 opacity-75'}">
+            <td class="p-3 border-b">
+              <div class="font-bold text-gray-800">${u.nama}</div>
+              <div class="text-xs text-gray-500 font-mono">${u.id}</div>
+            </td>
+            <td class="p-3 border-b">
+              <div class="text-gray-800">${u.nis_nip}</div>
+              <div class="text-xs text-gray-500">${u.email}</div>
+            </td>
+            <td class="p-3 border-b">
+              <span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${roleColor}">${u.role}</span>
+            </td>
+            <td class="p-3 border-b text-gray-800 font-medium">${u.wali_kelas || '-'}</td>
+            <td class="p-3 border-b">
+              <span class="px-2 py-1 text-[10px] font-bold uppercase rounded ${isAktif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${u.status}</span>
+            </td>
+            <td class="p-3 border-b text-right flex flex-col sm:flex-row gap-1 justify-end items-end">
+              <button onclick="bukaModalEdit(decodeURIComponent('${safeData}'))" class="w-full sm:w-auto px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200">Edit</button>
+              <button onclick="resetPassword('${u.id}', '${u.nama}')" class="w-full sm:w-auto px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-semibold hover:bg-yellow-200">Reset</button>
+              <button onclick="toggleStatus('${u.id}', '${isAktif ? 'nonaktif' : 'aktif'}', '${u.nama}')" class="w-full sm:w-auto px-2 py-1 ${isAktif ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} rounded text-xs font-semibold">
+                ${isAktif ? 'Off' : 'On'}
+              </button>
+            </td>
+          </tr>
+        `}).join('');
+
+        renderPagination(totalPages, filteredData.length);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-500 font-bold">Gagal merender: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderPagination(totalPages, totalItems) {
+      const container = document.getElementById('pagination');
+      const limit = parseInt(document.getElementById('limitUser').value);
+      const startIdx = ((currentPage - 1) * limit) + 1;
+      const endIdx = Math.min(currentPage * limit, totalItems);
+
+      container.innerHTML = `
+        <div class="text-gray-500 text-xs">Menampilkan ${startIdx} - ${endIdx} dari ${totalItems} user</div>
+        <div class="flex gap-1">
+          <button onclick="gantiHalaman(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Prev</button>
+          <div class="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold">${currentPage} / ${totalPages}</div>
+          <button onclick="gantiHalaman(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Next</button>
+        </div>
+      `;
+    }
+
+    function gantiHalaman(page) {
+      if (page < 1) return;
+      currentPage = page;
+      renderTabel();
+      document.getElementById('tabelUser').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // --- MODAL LOGIC ---
+    const modal = document.getElementById('modalUser');
+    const form = document.getElementById('formUser');
+
+    function toggleWaliKelas() {
+      const role = document.getElementById('inputRole').value;
+      document.getElementById('formWaliKelas').style.display = role === 'guru' ? 'block' : 'none';
+    }
+
+    function bukaModalTambah() {
+      document.getElementById('modalTitle').textContent = 'Tambah User Baru';
+      document.getElementById('userId').value = '';
+      form.reset();
+      toggleWaliKelas();
+      modal.classList.remove('hidden');
+    }
+
+    function bukaModalEdit(dataString) {
+      const data = JSON.parse(dataString);
+      document.getElementById('modalTitle').textContent = 'Edit Data User';
+      document.getElementById('userId').value = data.id;
+      document.getElementById('inputNama').value = data.nama;
+      document.getElementById('inputNip').value = data.nis_nip;
+      document.getElementById('inputEmail').value = data.email;
+      document.getElementById('inputRole').value = data.role;
+      document.getElementById('inputWaliKelas').value = data.wali_kelas || '';
+      toggleWaliKelas();
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModal() {
+      modal.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const userId = document.getElementById('userId').value;
+      const isEdit = userId !== '';
+
+      const payload = {
+        token: Auth.getToken(),
+        id: userId,
+        nama: document.getElementById('inputNama').value,
+        nis_nip: document.getElementById('inputNip').value,
+        email: document.getElementById('inputEmail').value,
+        role: document.getElementById('inputRole').value,
+        wali_kelas: document.getElementById('inputWaliKelas').value
+      };
+
+      const action = isEdit ? 'editUser' : 'tambahUser';
+      const res = await API.post(action, payload);
+
+      if (res.success) {
+        Swal.fire('Berhasil!', res.message, 'success');
+        tutupModal();
+        loadDataUser();
+      } else {
+        Swal.fire('Gagal!', res.message, 'error');
+      }
+      btn.disabled = false; btn.textContent = 'Simpan';
+    });
+
+    async function resetPassword(id, nama) {
+      Swal.fire({
+        title: 'Reset Password?',
+        text: `Password untuk ${nama} akan diubah menjadi "sekolah123".`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Reset!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const res = await API.post('aksiUser', { token: Auth.getToken(), id: id, aksi: 'reset' });
+          if (res.success) Swal.fire('Berhasil!', res.message, 'success');
+          else Swal.fire('Gagal!', res.message, 'error');
+        }
+      });
+    }
+
+    async function toggleStatus(id, newStatus, nama) {
+      Swal.fire({
+        title: newStatus === 'nonaktif' ? 'Nonaktifkan User?' : 'Aktifkan User?',
+        text: `Anda akan mengubah status ${nama} menjadi ${newStatus}.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Ubah!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const res = await API.post('aksiUser', { token: Auth.getToken(), id: id, aksi: 'toggle', status: newStatus });
+          if (res.success) {
+            Swal.fire('Berhasil!', res.message, 'success');
+            loadDataUser();
+          } else {
+            Swal.fire('Gagal!', res.message, 'error');
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // FITUR IMPORT CSV
+    // ==========================================
+    function bukaModalImport() {
+      document.getElementById('modalImport').classList.remove('hidden');
+      document.getElementById('formImport').reset();
+    }
+
+    function downloadTemplate() {
+      let tableHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Sheet1</x:Name>
+                  <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+        </head>
+        <body>
+          <table border="1">
+            <thead>
+              <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <th>nama</th><th>nis_nip</th><th>email</th><th>role</th><th>wali_kelas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Andi Wijaya</td><td>G005</td><td>andi@x.com</td><td>guru</td><td>X-IPA-2</td></tr>
+              <tr><td>Budi Admin</td><td>ADMIN2</td><td>budi@x.com</td><td>admin</td><td></td></tr>
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+      const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "template_import_guru.xls");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    document.getElementById('formImport').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('fileCsv');
+      const file = fileInput.files[0];
+      if (!file) return Swal.fire('Peringatan', 'Pilih file CSV terlebih dahulu', 'warning');
+
+      const btn = document.getElementById('btnImport');
+      
+      Swal.fire({
+        title: 'Memproses Data...',
+        text: 'Mohon tunggu, sedang mengunggah data ke server.',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      btn.disabled = true;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const csvData = event.target.result;
+        const lines = csvData.split(/\r?\n/);
+        const dataUser = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue; 
+          const separator = line.includes(';') ? ';' : ',';
+          const cols = line.split(separator);
+
+          if (i === 0 && (cols[0].toLowerCase().includes('nama') || cols[1].toLowerCase().includes('nis'))) continue;
+
+          if (cols.length >= 4) {
+            dataUser.push({
+              nama: cols[0].trim(),
+              nis_nip: cols[1].trim(),
+              email: cols[2].trim(),
+              role: cols[3].trim().toLowerCase(),
+              wali_kelas: cols[4] ? cols[4].trim() : ''
+            });
+          }
+        }
+
+        if (dataUser.length === 0) {
+          Swal.close(); btn.disabled = false;
+          return Swal.fire('Gagal', 'File CSV kosong atau format tidak sesuai.', 'error');
+        }
+
+        const res = await API.post('importUserMassal', { token: Auth.getToken(), data: dataUser });
+        btn.disabled = false;
+
+        if (res.success) {
+          let htmlResult = `Berhasil: <b>${res.data.sukses}</b> | Gagal: <b>${res.data.gagal}</b>`;
+          if (res.data.gagal > 0) {
+            htmlResult += `<div class="mt-3 text-left text-xs bg-red-50 p-3 rounded max-h-40 overflow-y-auto border border-red-200">`;
+            htmlResult += `<ul class="list-disc pl-4 text-red-600">${res.data.pesanError.slice(0, 10).map(e => `<li>${e}</li>`).join('')}</ul>`;
+            if (res.data.pesanError.length > 10) htmlResult += `<div class="text-center mt-2 font-bold">...dan ${res.data.pesanError.length - 10} error lainnya.</div>`;
+            htmlResult += `</div>`;
+          }
+
+          Swal.fire({
+            icon: res.data.gagal > 0 ? 'warning' : 'success',
+            title: 'Import Selesai',
+            html: htmlResult,
+            confirmButtonColor: '#3b82f6'
+          }).then(() => {
+            document.getElementById('modalImport').classList.add('hidden');
+            e.target.reset();
+            loadDataUser();
+          });
+        } else {
+          Swal.fire('Gagal', 'Error: ' + res.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
