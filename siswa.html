@@ -163,8 +163,9 @@
     window.addEventListener('DOMContentLoaded', async () => {
       const user = Auth.getUser();
       if (!user || user.role !== 'admin') {
-        alert('Halaman ini hanya untuk Admin.');
-        window.location.href = 'dashboard.html';
+        Swal.fire('Akses Ditolak', 'Halaman ini hanya untuk Admin.', 'error').then(() => {
+          window.location.href = 'dashboard.html';
+        });
         return;
       }
       loadDataSiswa();
@@ -231,6 +232,9 @@
             <button onclick='bukaModalEdit(${JSON.stringify(s)})' class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200">Edit</button>
             <button onclick="toggleStatus('${s.user_id}', '${isAktif ? 'nonaktif' : 'aktif'}')" class="px-3 py-1 ${isAktif ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} rounded text-xs font-semibold">
               ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+            <button onclick="hapusSiswa('${s.user_id}', '${s.nama}')" class="w-full sm:w-auto px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold hover:bg-red-200">
+              Hapus
             </button>
           </td>
         </tr>
@@ -313,23 +317,63 @@
       };
 
       const action = isEdit ? 'editSiswa' : 'tambahSiswa';
-      const res = await API.post(action, payload);
+            const res = await API.post(action, payload);
 
       if (res.success) {
-        alert(res.message);
+        Swal.fire('Berhasil!', res.message, 'success');
         tutupModal();
         loadDataSiswa();
       } else {
-        alert('Gagal: ' + res.message);
+        Swal.fire('Gagal!', res.message, 'error');
       }
       btn.disabled = false; btn.textContent = 'Simpan';
     });
 
-    async function toggleStatus(userId, newStatus) {
-      if (!confirm(`Yakin ingin mengubah status siswa ini menjadi ${newStatus}?`)) return;
-      const res = await API.post('toggleStatusSiswa', { token: Auth.getToken(), user_id: userId, status: newStatus });
-      if (res.success) loadDataSiswa();
-      else alert(res.message);
+    async function toggleStatus(userId, newStatus, nama) {
+      const title = newStatus === 'nonaktif' ? 'Nonaktifkan Siswa?' : 'Aktifkan Siswa?';
+      Swal.fire({
+        title: title,
+        text: `Anda akan mengubah status ${nama} menjadi ${newStatus}.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Ubah!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const res = await API.post('toggleStatusSiswa', { token: Auth.getToken(), user_id: userId, status: newStatus });
+          if (res.success) {
+            Swal.fire('Berhasil!', res.message, 'success');
+            loadDataSiswa();
+          } else {
+            Swal.fire('Gagal!', res.message, 'error');
+          }
+        }
+      });
+    }
+
+        async function hapusSiswa(userId, nama) {
+      Swal.fire({
+        title: 'Hapus Permanen?',
+        text: `Data siswa ${nama} akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan!`,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          Swal.showLoading();
+          const res = await API.post('hapusSiswa', { token: Auth.getToken(), user_id: userId });
+          if (res.success) {
+            Swal.fire('Terhapus!', res.message, 'success');
+            loadDataSiswa();
+          } else {
+            Swal.fire('Gagal!', res.message, 'error');
+          }
+        }
+      });
     }
 
     document.getElementById('headerTanggalSiswa').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
