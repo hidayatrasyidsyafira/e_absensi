@@ -274,30 +274,49 @@
     //   document.body.removeChild(link);
     // }
 
-        function downloadTemplate() {
-      // Susun data dalam bentuk array of arrays
-      const rows = [
-        ["nama", "nis", "nisn", "tingkat", "jurusan", "rombel", "jenis_kelamin"],
-        ["Budi Santoso", "12345", "0012345678", "X", "IPA", "1", "L"],
-        ["Ani Lestari", "12346", "0012345679", "X", "IPA", "1", "P"]
-      ];
-      
-      // Ubah array menjadi teks CSV dengan pemisah koma dan baris baru Windows (\r\n)
-      let csvContent = "";
-      rows.forEach(row => {
-        csvContent += row.join(",") + "\r\n";
-      });
+      function downloadTemplate() {
+      // Kita buat tabel HTML, lalu dibungkus agar Excel membacanya sebagai baris & kolom
+      let tableHtml = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Sheet1</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+        </head>
+        <body>
+          <table border="1">
+            <thead>
+              <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <th>nama</th><th>nis</th><th>nisn</th><th>tingkat</th><th>jurusan</th><th>rombel</th><th>jenis_kelamin</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Budi Santoso</td><td>12345</td><td>0012345678</td><td>X</td><td>IPA</td><td>1</td><td>L</td></tr>
+              <tr><td>Ani Lestari</td><td>12346</td><td>0012345679</td><td>X</td><td>IPA</td><td>1</td><td>P</td></tr>
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
 
-      // Tambahkan BOM (\uFEFF) agar Excel otomatis mendeteksi encoding UTF-8
-      // dan langsung memisahkan kolom dengan rapi
-      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", "template_import_siswa.csv");
-      link.style.visibility = 'hidden';
-      
+      link.setAttribute("download", "template_import_siswa.xls"); // Ekstensi diubah jadi .xls
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
