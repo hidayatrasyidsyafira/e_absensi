@@ -336,18 +336,25 @@
 
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const csvData = event.target.result;
-        const lines = csvData.split('\n');
+                const csvData = event.target.result;
+        // Pecah berdasarkan baris baru (Windows \r\n atau Unix \n)
+        const lines = csvData.split(/\r?\n/);
         
         const dataSiswa = [];
         
-        // Loop mulai dari baris 1 (index 1) untuk melewati header
-        for (let i = 1; i < lines.length; i++) {
+        for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
-          if (!line) continue; // Skip baris kosong
+          if (!line) continue; 
 
-          // Pisahkan berdasarkan koma
-          const cols = line.split(',');
+          // Deteksi otomatis: Pisahkan dengan koma ATAU titik koma
+          const separator = line.includes(';') ? ';' : ',';
+          const cols = line.split(separator);
+
+          // Jika ini baris header (mengandung kata 'nama' atau 'nisn'), lewati
+          if (i === 0 && (cols[0].toLowerCase().includes('nama') || cols[2].toLowerCase().includes('nisn'))) {
+            continue; 
+          }
+
           if (cols.length >= 7) {
             dataSiswa.push({
               nama: cols[0].trim(),
