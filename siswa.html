@@ -29,6 +29,25 @@
       </div>
     </div>
 
+        <!-- Kontrol Pencarian & Limit -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
+      <div class="relative w-full md:w-1/2">
+        <input type="text" id="searchSiswa" oninput="renderTabel()" placeholder="Cari Nama, NIS, atau NISN..." 
+          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <span>Tampilkan:</span>
+        <select id="limitSiswa" onchange="currentPage = 1; renderTabel();" class="border border-gray-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+        <span>data</span>
+      </div>
+    </div>
+
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -42,10 +61,13 @@
             </tr>
           </thead>
           <tbody id="tabelSiswa" class="text-sm divide-y divide-gray-100">
-            <!-- Render JS -->
+            <tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>
           </tbody>
         </table>
       </div>
+      
+      <!-- Navigasi Paginasi -->
+      <div id="pagination" class="p-4 border-t border-gray-200 flex justify-between items-center text-sm bg-gray-50"></div>
     </div>
   </main>
 
@@ -134,6 +156,10 @@
   <script src="api.js"></script>
   <script src="auth.js"></script>
   <script>
+
+   let allSiswaData = []; // Menyimpan semua data dari server
+    let currentPage = 1;   // Halaman saat ini
+    
     window.addEventListener('DOMContentLoaded', async () => {
       const user = Auth.getUser();
       if (!user || user.role !== 'admin') {
@@ -144,7 +170,7 @@
       loadDataSiswa();
     });
 
-    async function loadDataSiswa() {
+   async function loadDataSiswa() {
       const tbody = document.getElementById('tabelSiswa');
       tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Memuat data...</td></tr>';
       
@@ -154,12 +180,38 @@
         return;
       }
 
-      if (res.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data siswa.</td></tr>';
+      allSiswaData = res.data; // Simpan data ke variabel global
+      renderTabel();           // Panggil fungsi render
+    }
+
+    function renderTabel() {
+      const tbody = document.getElementById('tabelSiswa');
+      const searchQuery = document.getElementById('searchSiswa').value.toLowerCase();
+      const limit = parseInt(document.getElementById('limitSiswa').value);
+
+      // 1. Filter data berdasarkan pencarian
+      const filteredData = allSiswaData.filter(s => 
+        String(s.nama).toLowerCase().includes(searchQuery) ||
+        String(s.nis).includes(searchQuery) ||
+        String(s.nisn).includes(searchQuery)
+      );
+
+      // 2. Hitung total halaman
+      const totalPages = Math.ceil(filteredData.length / limit) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      // 3. Ambil data untuk halaman saat ini
+      const startIndex = (currentPage - 1) * limit;
+      const paginatedData = filteredData.slice(startIndex, startIndex + limit);
+
+      // 4. Render ke tabel
+      if (paginatedData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">Data tidak ditemukan.</td></tr>';
+        document.getElementById('pagination').innerHTML = '';
         return;
       }
 
-      tbody.innerHTML = res.data.map(s => {
+      tbody.innerHTML = paginatedData.map(s => {
         const isAktif = s.status_user === 'aktif';
         return `
         <tr class="${isAktif ? '' : 'bg-gray-50 opacity-75'}">
@@ -183,8 +235,35 @@
           </td>
         </tr>
       `}).join('');
+
+      // 5. Render navigasi paginasi
+      renderPagination(totalPages, filteredData.length);
     }
 
+    function renderPagination(totalPages, totalItems) {
+      const container = document.getElementById('pagination');
+      const startIdx = ((currentPage - 1) * parseInt(document.getElementById('limitSiswa').value)) + 1;
+      const endIdx = Math.min(currentPage * parseInt(document.getElementById('limitSiswa').value), totalItems);
+
+      container.innerHTML = `
+        <div class="text-gray-500 text-xs">Menampilkan ${startIdx} - ${endIdx} dari ${totalItems} siswa</div>
+        <div class="flex gap-1">
+          <button onclick="gantiHalaman(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Prev</button>
+          
+          <div class="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold">${currentPage} / ${totalPages}</div>
+          
+          <button onclick="gantiHalaman(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">Next</button>
+        </div>
+      `;
+    }
+
+    function gantiHalaman(page) {
+      currentPage = page;
+      renderTabel();
+      // Scroll ke atas tabel agar user tidak bingung
+      document.getElementById('tabelSiswa').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
     // --- MODAL LOGIC ---
     const modal = document.getElementById('modalSiswa');
     const form = document.getElementById('formSiswa');
