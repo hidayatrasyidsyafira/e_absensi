@@ -81,8 +81,9 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       const user = Auth.getUser();
-      if (!user || user.role !== 'admin') {
-        Swal.fire('Akses Ditolak', 'Halaman ini hanya untuk Admin.', 'error').then(() => {
+      // Izinkan admin dan guru
+      if (!user || (user.role !== 'admin' && user.role !== 'guru')) {
+        Swal.fire('Akses Ditolak', 'Halaman ini hanya untuk Admin dan Guru.', 'error').then(() => {
           window.location.href = 'dashboard.html';
         });
       }
