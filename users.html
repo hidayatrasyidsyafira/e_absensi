@@ -18,7 +18,6 @@
 
   <main class="max-w-5xl mx-auto p-4 mt-4">
     
-    <!-- Header & Buttons -->
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-bold text-gray-800">Daftar Guru & Admin</h1>
       <div class="flex gap-2">
@@ -31,13 +30,23 @@
       </div>
     </div>
 
-    <!-- Kontrol Pencarian & Limit -->
+    <!-- Kontrol Pencarian, Filter & Limit -->
     <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-      <div class="relative w-full md:w-1/2">
-        <input type="text" id="searchUser" oninput="renderTabel()" placeholder="Cari Nama, NIP, atau Email..." 
-          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      <div class="flex flex-col md:flex-row gap-2 w-full md:w-2/3">
+        <!-- Kolom Pencarian -->
+        <div class="relative w-full md:w-1/2">
+          <input type="text" id="searchUser" oninput="currentPage = 1; renderTabel()" placeholder="Cari Nama, NIP, atau Email..." 
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <!-- Dropdown Filter Role -->
+        <select id="filterRoleUser" onchange="currentPage = 1; renderTabel()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-1/2">
+          <option value="ALL">-- Semua Role --</option>
+          <option value="guru">Guru</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
+      
       <div class="flex items-center gap-2 text-sm text-gray-600">
         <span>Tampilkan:</span>
         <select id="limitUser" onchange="currentPage = 1; renderTabel();" class="border border-gray-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500">
@@ -50,7 +59,6 @@
       </div>
     </div>
 
-    <!-- Tabel -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -179,10 +187,19 @@
     function renderTabel() {
       const tbody = document.getElementById('tabelUser');
       const searchQuery = document.getElementById('searchUser').value.toLowerCase();
+      const filterRole = document.getElementById('filterRoleUser').value;
       const limit = parseInt(document.getElementById('limitUser').value);
 
       try {
-        const filteredData = allUsersData.filter(u => 
+        let filteredData = allUsersData;
+
+        // Filter Dropdown Role
+        if (filterRole !== 'ALL') {
+          filteredData = filteredData.filter(u => String(u.role).toLowerCase() === filterRole);
+        }
+
+        // Filter Pencarian
+        filteredData = filteredData.filter(u => 
           String(u.nama || '').toLowerCase().includes(searchQuery) ||
           String(u.nis_nip || '').toLowerCase().includes(searchQuery) ||
           String(u.email || '').toLowerCase().includes(searchQuery)
