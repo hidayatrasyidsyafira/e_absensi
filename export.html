@@ -89,7 +89,7 @@
       }
     });
 
-    document.getElementById('formExport').addEventListener('submit', async (e) => {
+        document.getElementById('formExport').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnExport');
       btn.disabled = true;
@@ -119,34 +119,67 @@
           return Swal.fire('Data Kosong', 'Tidak ada data absensi pada rentang tanggal tersebut.', 'info');
         }
 
-        // --- PROSES KONVERSI KE CSV ---
+        // --- PROSES KONVERSI KE EXCEL (.xls) ---
         const items = res.data;
         const headers = Object.keys(items[0]);
         
-        let csvContent = "";
+        let tableHtml = `
+          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset="UTF-8">
+            <!--[if gte mso 9]>
+            <xml>
+              <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                  <x:ExcelWorksheet>
+                    <x:Name>Laporan Absensi</x:Name>
+                    <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                  </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+              </x:ExcelWorkbook>
+            </xml>
+            <![endif]-->
+          </head>
+          <body>
+            <table border="1">
+              <thead>
+                <tr style="background-color: #f2f2f2; font-weight: bold;">
+                  ${headers.map(h => `<th>${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+        `;
         
-        // Header
-        csvContent += headers.join(";") + "\r\n";
-        
-        // Rows
         items.forEach(row => {
-          const values = headers.map(header => {
+          tableHtml += `<tr>`;
+          headers.forEach(header => {
             let val = row[header] === null || row[header] === undefined ? '' : String(row[header]);
-            // Bersihkan karakter titik koma dan enter agar tidak merusak format CSV
-            val = val.replace(/;/g, ',').replace(/\n/g, ' ').replace(/\r/g, '');
-            return `"${val}"`; // Bungkus dengan kutip
+            
+            // --- KUNCI RAHASIA AGAR ANGKA 0 TIDAK HILANG ---
+            if (header === 'NIS' || header === 'NISN') {
+              // mso-number-format:'\@'; memaksa Excel membaca sel sebagai Teks
+              tableHtml += `<td style="mso-number-format:'\\@';">${val}</td>`;
+            } else {
+              tableHtml += `<td>${val}</td>`;
+            }
           });
-          csvContent += values.join(";") + "\r\n";
+          tableHtml += `</tr>`;
         });
+        
+        tableHtml += `
+              </tbody>
+            </table>
+          </body>
+          </html>
+        `;
 
-        // Buat File Blob
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Buat file dengan format Excel (.xls)
+        const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
         const url = URL.createObjectURL(blob);
         
-        // Trigger Download
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `Laporan_Absen_${tipe.toUpperCase()}_${startDate}_sd_${endDate}.csv`);
+        link.setAttribute("download", `Laporan_Absen_${tipe.toUpperCase()}_${startDate}_sd_${endDate}.xls`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -158,7 +191,7 @@
         Swal.fire('Gagal', err.message, 'error');
         btn.disabled = false;
       }
-    });
+    });  
   </script>
 </body>
 </html>
