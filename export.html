@@ -79,13 +79,25 @@
     document.getElementById('inputEnd').value = formatDateInput(today);
     document.getElementById('headerTanggalExport').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', () => {
       const user = Auth.getUser();
-      // Izinkan admin dan guru
       if (!user || (user.role !== 'admin' && user.role !== 'guru')) {
         Swal.fire('Akses Ditolak', 'Halaman ini hanya untuk Admin dan Guru.', 'error').then(() => {
           window.location.href = 'dashboard.html';
         });
+        return;
+      }
+
+      // Jika Guru, hapus opsi "Absen Gerbang" dan pilih "Absen Mapel" secara default
+      if (user.role === 'guru') {
+        const selectTipe = document.getElementById('inputTipe');
+        const gerbangOption = selectTipe.querySelector('option[value="gerbang"]');
+        if (gerbangOption) gerbangOption.remove();
+        selectTipe.value = 'mapel';
+        
+        // Opsional: Ubah judul agar Guru tahu hak aksesnya
+        document.querySelector('h1').textContent = 'Unduh Laporan Mapel Siswa';
+        document.querySelector('p.text-sm').textContent = 'Unduh data kehadiran siswa di mapel Anda. Data mencakup siswa yang Anda ajar dan anak wali kelas Anda.';
       }
     });
 
